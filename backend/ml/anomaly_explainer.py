@@ -22,85 +22,105 @@ ANOMALY_TEMPLATES = {
     "time_of_day_hour":        "Login at {hour}:00 — outside user's typical hours",
     "typing_burst_count":      "Typing pattern: single unbroken burst — possible automation",
     "error_rate":              "Zero typing errors — possible automated input",
+    # ── NEW: Desktop-specific templates
+    "device_class_switch":     "Device class switched from enrolled type — first {device_class} session",
+    "is_known_fingerprint":    "Device fingerprint not in trusted registry (seen < 3 times)",
+    "mouse_movement_entropy":  "Mouse movement entropy {direction} — possible bot or scripted input",
+    "mouse_speed_cv":          "Mouse speed variation {direction} baseline — possible automation",
+    "scroll_wheel_event_count":"Scroll wheel count {direction} expected range for device type",
 }
 
 
-def get_scaler_path(user_id: int) -> str:
-    return os.path.join(MODEL_DIR, f"scaler_{user_id}.pkl")
+def get_scaler_path(user_id: int, device_class: str = "all") -> str:
+    return os.path.join(MODEL_DIR, f"scaler_{user_id}_{device_class}.pkl")
 
 
-def explain_anomalies(user_id: int, feature_vector: list) -> list[dict]:
+def explain_anomalies(
+    user_id: int,
+    feature_vector: list,
+    device_class: str = "all"
+) -> list:
     """
-    Compute per-feature z-scores using StandardScaler parameters from training.
-    Reuses the scaler already fitted during train_model().
-    """
-    if len(feature_vector) != 47:
-        raise ValueError(f"Expected 47 features, got {len(feature_vector)}")
+    Compute per-feature z-scores against user's trained StandardScaler.
+    Returns all 55 features ranked by absolute z-score (most anomalous first).
 
-    try:
-        with open(get_scaler_path(user_id), 'rb') as f:
-            scaler = pickle.load(f)
-    except FileNotFoundError:
-        # No trained model: return neutral results
+    Loads scaler for device_class='desktop' if available, falls back to 'all'.
+    Works with 55-feature vectors automatically — scaler dims match training dims.
+    """
+    if len(feature_vector) != len(FEATURE_NAMES):
+        raise ValueError(f"Expected {len(FEATURE_NAMES)} features, got {len(feature_vector)}")
+
+    # Scaler fallback: device-specific → all
+    scaler = None
+    for dc in ([device_class, "all"] if device_class != "all" else ["all"]):
+        try:
+            with open(get_scaler_path(user_id, dc), "rb") as f:
+                scaler = pickle.load(f)
+            break
+        except FileNotFoundError:
+            continue
+
+    if scaler is None:
         return _build_empty_explanation(feature_vector)
 
-    # StandardScaler stores mean_ and scale_ (std dev) per feature
-    baseline_means = scaler.mean_           # shape (47,)
-    baseline_stds  = scaler.scale_          # shape (47,)
+    baseline_means = scaler.mean_   # shape (55,)
+    baseline_stds  = scaler.scale_  # shape (55,)
 
-    X = np.array(feature_vector)
-
-    # Z-score: (value - mean) / std
-    # Avoid division by zero for zero-variance features
+    X         = np.array(feature_vector)
     safe_stds = np.where(baseline_stds < 1e-8, 1e-8, baseline_stds)
-    z_scores = (X - baseline_means) / safe_stds
+    z_scores  = (X - baseline_means) / safe_stds
 
     results = []
     for i, name in enumerate(FEATURE_NAMES):
-        # Only process the first 47 features (sanity check)
-        if i >= 47: break
-        
         z = float(z_scores[i])
         results.append({
-            "name":           name,
-            "value":          float(feature_vector[i]),
-            "baseline_mean":  float(baseline_means[i]),
-            "baseline_std":   float(baseline_stds[i]),
-            "z_score":        round(z, 3),
-            "flagged":        abs(z) > Z_SCORE_FLAG_THRESHOLD,
+            "name":          name,
+            "value":         float(feature_vector[i]),
+            "baseline_mean": float(baseline_means[i]),
+            "baseline_std":  float(baseline_stds[i]),
+            "z_score":       round(z, 3),
+            "flagged":       abs(z) > Z_SCORE_FLAG_THRESHOLD,
         })
 
-    # Sort by absolute z-score descending (most anomalous first)
+    # Most anomalous first
     results.sort(key=lambda x: abs(x["z_score"]), reverse=True)
     return results
 
 
-def top_anomaly_strings(user_id: int, feature_vector: list, top_n: int = 4) -> list[str]:
+def top_anomaly_strings(
+    user_id: int,
+    feature_vector: list,
+    device_class: str = "all",
+    top_n: int = 4
+) -> list:
     """
-    Return list of human-readable strings summarizing the top flagged anomalies.
+    Return top N human-readable anomaly strings for display in alert feed.
+    Passes device_class to explain_anomalies for correct scaler selection.
     """
-    explanations = explain_anomalies(user_id, feature_vector)
-    flagged = [e for e in explanations if e["flagged"]]
+    explanations = explain_anomalies(user_id, feature_vector, device_class)
+    flagged      = [e for e in explanations if e["flagged"]]
 
     strings = []
     for e in flagged:
         if len(strings) >= top_n:
             break
-            
+
         template = ANOMALY_TEMPLATES.get(e["name"])
         if template:
             direction = "faster" if e["z_score"] < 0 else "slower"
-            # Special logic for navigation/binary features
-            if e["name"] in ["direct_to_transfer", "is_new_device", "form_field_order_entropy"]:
+            if e["name"] in ["direct_to_transfer", "is_new_device", "form_field_order_entropy",
+                              "device_class_switch", "is_known_fingerprint"]:
                 direction = "atypical"
-            
-            # Simple pct calculation for templating
+            if e["name"] in ["mouse_movement_entropy", "mouse_speed_cv",
+                              "scroll_wheel_event_count"]:
+                direction = "below" if e["z_score"] < 0 else "above"
+
             pct = int(abs(e["z_score"]) * 10)
-            
             msg = template.format(
                 direction=direction,
                 pct=pct,
                 hour=int(e["value"]),
+                device_class="desktop" if e["value"] == 1 else "mobile",
             )
             strings.append(msg)
         else:
@@ -116,7 +136,7 @@ def top_anomaly_strings(user_id: int, feature_vector: list, top_n: int = 4) -> l
     return strings[:top_n]
 
 
-def _build_empty_explanation(feature_vector: list) -> list[dict]:
+def _build_empty_explanation(feature_vector: list) -> list:
     """Fallback when no trained scaler exists."""
     return [
         {
