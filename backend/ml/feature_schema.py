@@ -1,5 +1,6 @@
 FEATURE_NAMES = [
     # Touch Dynamics (8 features)
+    # On desktop: all 8 = 0.0 (no touch hardware). SVM treats as strong outlier vs mobile baseline.
     "tap_pressure_mean",          # mean force sensor value across session taps
     "tap_pressure_std",           # std dev of tap pressure
     "swipe_velocity_mean",        # mean pixels/ms across all swipe events
@@ -10,6 +11,7 @@ FEATURE_NAMES = [
     "tap_duration_std",
 
     # Typing Biometrics (10 features)
+    # Physical keyboard produces tighter inter-key timing and lower error_rate than touchscreen.
     "inter_key_delay_mean",       # mean time between consecutive keypresses (ms)
     "inter_key_delay_std",
     "inter_key_delay_p95",        # 95th percentile -- catches burst typing
@@ -22,6 +24,7 @@ FEATURE_NAMES = [
     "words_per_minute",           # estimated WPM from session
 
     # Device Motion (8 features)
+    # On desktop: accelerometer/gyroscope unavailable. All 8 = 0.0.
     "accel_x_std",                # std dev of X-axis accelerometer during typing
     "accel_y_std",
     "accel_z_std",
@@ -57,7 +60,22 @@ FEATURE_NAMES = [
     "device_fingerprint_delta",   # distance from nearest known device
     "timezone_changed",           # 1 if timezone differs from last sessions
     "os_version_changed",         # 1 if OS version changed since last session
+
+    # ── NEW: Device Trust Context (5 features)
+    # Replaces raw modality flag. SVM scores these alongside behavioral signals.
+    # Populated by build_device_context() at session start via DeviceRegistry queries.
+    "device_class_known",         # 1 if user has prior sessions on this device class (mobile/desktop)
+    "device_session_count",       # count of prior sessions on this exact device fingerprint
+    "device_class_switch",        # 1 if current class differs from dominant class in last 30 days
+    "is_known_fingerprint",       # 1 if fingerprint in device_registry with session_count >= 3
+    "time_since_last_seen_hours", # hours since this device last used (0 = never seen before)
+
+    # ── NEW: Desktop Mouse Biometrics (3 features)
+    # Always 0.0 on mobile (hardware impossibility). Populated by JS SDK on desktop.
+    "mouse_movement_entropy",     # Shannon entropy of mouse path (low = bot, high = human)
+    "mouse_speed_cv",             # coeff of variation of mouse speed (bots ~0.0, humans 0.3-0.8)
+    "scroll_wheel_event_count",   # scroll wheel events per session (impossible on mobile = 0 always)
 ]
 
-# Critical contract guard: backend crashes if dimensions break
-assert len(FEATURE_NAMES) == 47
+# Critical contract guard: all ML modules and SDK must match this count.
+assert len(FEATURE_NAMES) == 55
