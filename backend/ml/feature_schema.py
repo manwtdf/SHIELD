@@ -12,7 +12,7 @@ FEATURE_NAMES = [
     # Typing Biometrics (10 features)
     "inter_key_delay_mean",       # mean time between consecutive keypresses (ms)
     "inter_key_delay_std",
-    "inter_key_delay_p95",        # 95th percentile — catches burst typing
+    "inter_key_delay_p95",        # 95th percentile -- catches burst typing
     "dwell_time_mean",            # mean time each key is held down (ms)
     "dwell_time_std",
     "error_rate",                 # backspace count / total keystrokes
@@ -29,7 +29,7 @@ FEATURE_NAMES = [
     "gyro_y_std",
     "gyro_z_std",
     "device_tilt_mean",           # mean device angle from vertical (degrees)
-    "hand_stability_score",       # inverse of motion variance — higher = steadier
+    "hand_stability_score",       # inverse of motion variance -- higher = steadier
 
     # Navigation Graph (9 features)
     "screens_visited_count",      # total unique screens visited
@@ -52,23 +52,12 @@ FEATURE_NAMES = [
     "form_submit_speed_ms",       # time from first field focus to submit
     "interaction_pace_ratio",     # actual pace / historical mean pace
 
-    # Device Context (4 features — categorical, session-level)
+    # Device Context (4 features -- categorical, session-level)
     "is_new_device",              # 1 if device fingerprint not in user's allowlist
-    "device_fingerprint_delta",   # cosine distance from nearest known device
-    "timezone_changed",           # 1 if timezone differs from last 5 sessions
+    "device_fingerprint_delta",   # distance from nearest known device
+    "timezone_changed",           # 1 if timezone differs from last sessions
     "os_version_changed",         # 1 if OS version changed since last session
-
-    # Device Trust Context (5 features — NEW: multi-device / PC support)
-    "device_class_known",         # 1 if user has prior sessions on this device class (mobile/desktop)
-    "device_session_count",       # count of prior sessions on this exact device fingerprint
-    "device_class_switch",        # 1 if current class differs from user's dominant class last 30 days
-    "is_known_fingerprint",       # 1 if fingerprint in device_registry with session_count >= 3
-    "time_since_last_seen_hours", # hours since this device was last used (0 if never seen)
-
-    # Desktop Mouse Biometrics (3 features — NEW: always 0.0 on mobile/touch device)
-    "mouse_movement_entropy",     # Shannon entropy of mouse path (0.0 on mobile always)
-    "mouse_speed_cv",             # coeff of variation of mouse speed (bots ~0.0, humans 0.3-0.8)
-    "scroll_wheel_event_count",   # count of scroll wheel events (impossible on mobile = 0 always)
 ]
 
-assert len(FEATURE_NAMES) == 55
+# Critical contract guard: backend crashes if dimensions break
+assert len(FEATURE_NAMES) == 47

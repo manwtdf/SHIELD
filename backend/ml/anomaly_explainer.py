@@ -5,7 +5,7 @@ from backend.ml.feature_schema import FEATURE_NAMES
 
 MODEL_DIR = os.path.join(os.getcwd(), "backend", "ml", "models")
 
-# Z-score threshold above which a feature is flagged as anomalous
+# Z-score threshold |z| > 2.5 captures ~99% of normal variation
 Z_SCORE_FLAG_THRESHOLD = 2.5
 
 ANOMALY_TEMPLATES = {
@@ -22,8 +22,6 @@ ANOMALY_TEMPLATES = {
     "time_of_day_hour":        "Login at {hour}:00 — outside user's typical hours",
     "typing_burst_count":      "Typing pattern: single unbroken burst — possible automation",
     "error_rate":              "Zero typing errors — possible automated input",
-    # SIM swap always appended if active:
-    "SIM_SWAP":                "SIM swap event detected {minutes} minutes ago (telecom signal)",
 }
 
 
@@ -31,31 +29,19 @@ def get_scaler_path(user_id: int) -> str:
     return os.path.join(MODEL_DIR, f"scaler_{user_id}.pkl")
 
 
-def get_metadata_path(user_id: int) -> str:
-    return os.path.join(MODEL_DIR, f"metadata_{user_id}.pkl")
-
-
 def explain_anomalies(user_id: int, feature_vector: list) -> list[dict]:
     """
-    Compute per-feature z-scores against user's trained scaler (mean/std).
-    Returns list of all 47 features with z-score and flagged status.
-    Sorted by absolute z-score descending (most anomalous first).
-
-    Args:
-        user_id:        User whose baseline scaler to compare against
-        feature_vector: 47-float list from current session
-
-    Returns:
-        List of dicts: [{name, value, baseline_mean, baseline_std, z_score, flagged}]
+    Compute per-feature z-scores using StandardScaler parameters from training.
+    Reuses the scaler already fitted during train_model().
     """
-    if len(feature_vector) != len(FEATURE_NAMES):
-        raise ValueError(f"Expected {len(FEATURE_NAMES)} features, got {len(feature_vector)}")
+    if len(feature_vector) != 47:
+        raise ValueError(f"Expected 47 features, got {len(feature_vector)}")
 
     try:
         with open(get_scaler_path(user_id), 'rb') as f:
             scaler = pickle.load(f)
     except FileNotFoundError:
-        # No trained model: return zero z-scores, nothing flagged
+        # No trained model: return neutral results
         return _build_empty_explanation(feature_vector)
 
     # StandardScaler stores mean_ and scale_ (std dev) per feature
@@ -64,13 +50,16 @@ def explain_anomalies(user_id: int, feature_vector: list) -> list[dict]:
 
     X = np.array(feature_vector)
 
-    # Z-score: how many std deviations from user's learned mean
+    # Z-score: (value - mean) / std
     # Avoid division by zero for zero-variance features
     safe_stds = np.where(baseline_stds < 1e-8, 1e-8, baseline_stds)
     z_scores = (X - baseline_means) / safe_stds
 
     results = []
     for i, name in enumerate(FEATURE_NAMES):
+        # Only process the first 47 features (sanity check)
+        if i >= 47: break
+        
         z = float(z_scores[i])
         results.append({
             "name":           name,
@@ -81,27 +70,19 @@ def explain_anomalies(user_id: int, feature_vector: list) -> list[dict]:
             "flagged":        abs(z) > Z_SCORE_FLAG_THRESHOLD,
         })
 
-    # Sort: most anomalous first
+    # Sort by absolute z-score descending (most anomalous first)
     results.sort(key=lambda x: abs(x["z_score"]), reverse=True)
     return results
 
 
-def top_anomaly_strings(user_id: int, feature_vector: list, sim_swap_active: bool = False, top_n: int = 4) -> list[str]:
+def top_anomaly_strings(user_id: int, feature_vector: list, top_n: int = 4) -> list[str]:
     """
-    Return top N human-readable anomaly strings for display in alert feed.
-    Always includes SIM swap if active.
+    Return list of human-readable strings summarizing the top flagged anomalies.
     """
     explanations = explain_anomalies(user_id, feature_vector)
     flagged = [e for e in explanations if e["flagged"]]
 
     strings = []
-    
-    # Priority 1: SIM Swap
-    if sim_swap_active:
-        msg = ANOMALY_TEMPLATES.get("SIM_SWAP", "SIM swap detected recently").format(minutes=6)
-        strings.append(msg)
-        
-    # Priority 2: Flagged Behavioral Anomalies
     for e in flagged:
         if len(strings) >= top_n:
             break
@@ -120,14 +101,13 @@ def top_anomaly_strings(user_id: int, feature_vector: list, sim_swap_active: boo
                 direction=direction,
                 pct=pct,
                 hour=int(e["value"]),
-                typical="9-20"
             )
             strings.append(msg)
         else:
             direction = "above" if e["z_score"] > 0 else "below"
             magnitude = abs(e["z_score"])
             strings.append(
-                f"{e['name']}: {magnitude:.1f} std {direction} baseline "
+                f"{e['name']}: {magnitude:.1f} std {direction} baseline"
             )
 
     if not strings:
