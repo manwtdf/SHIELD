@@ -750,4 +750,3 @@ Response:
 
 ---
 
-*Generated for SHIELD — Session-based Heuristic Intelligence for Event Level Defense*
