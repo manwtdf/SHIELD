@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 40% 6%;
+    --foreground: 210 25% 98%;
+    --card: 220 35% 9%;
+    --card-foreground: 210 25% 98%;
+    --popover: 220 35% 9%;
+    --popover-foreground: 210 25% 98%;
+    --primary: 153 100% 50%;
+    --primary-foreground: 220 40% 6%;
+    --secondary: 220 30% 15%;
+    --secondary-foreground: 210 25% 98%;
+    --muted: 215 20% 20%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 153 100% 50%;
+    --accent-foreground: 220 40% 6%;
+    --destructive: 0 100% 62%;
+    --destructive-foreground: 210 25% 98%;
+    --border: 217 40% 20%;
+    --input: 217 40% 20%;
+    --ring: 153 100% 50%;
+    --radius: 0.5rem;
+
+    --shield-bg: 220 40% 6%;
+    --shield-panel: 220 35% 9%;
+    --shield-border: 217 40% 20%;
+    --shield-green: 153 100% 50%;
+    --shield-red: 0 100% 62%;
+    --shield-amber: 38 92% 50%;
+    --shield-blue: 210 100% 60%;
+    --shield-muted-text: 215 20% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-mono-shield {
+    font-family: 'Share Tech Mono', monospace;
+  }
+}
+
+@keyframes orbit1 {
+  from { transform: rotate(0deg) translateX(var(--orbit-radius)) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(var(--orbit-radius)) rotate(-360deg); }
+}
+@keyframes orbit2 {
+  from { transform: rotate(120deg) translateX(var(--orbit-radius)) rotate(-120deg); }
+  to { transform: rotate(480deg) translateX(var(--orbit-radius)) rotate(-480deg); }
+}
+@keyframes orbit3 {
+  from { transform: rotate(240deg) translateX(var(--orbit-radius)) rotate(-240deg); }
+  to { transform: rotate(600deg) translateX(var(--orbit-radius)) rotate(-600deg); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px hsl(153 100% 50% / 0.3), 0 0 60px hsl(153 100% 50% / 0.1); }
+  50% { box-shadow: 0 0 30px hsl(153 100% 50% / 0.5), 0 0 80px hsl(153 100% 50% / 0.2); }
+}
+@keyframes pulse-glow-red {
+  0%, 100% { box-shadow: 0 0 20px hsl(0 100% 62% / 0.3), 0 0 60px hsl(0 100% 62% / 0.1); }
+  50% { box-shadow: 0 0 40px hsl(0 100% 62% / 0.6), 0 0 100px hsl(0 100% 62% / 0.3); }
+}
+@keyframes pulse-border {
+  0%, 100% { border-color: hsl(38 92% 50% / 0.5); }
+  50% { border-color: hsl(38 92% 50% / 1); }
+}
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
