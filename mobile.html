@@ -1,94 +1,96 @@
 <!DOCTYPE html>
 
-<html lang="en"><head>
+<html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Sovereign - Luminous Vault Dashboard</title>
+<title>Sovereign | Secure Transfer</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            "colors": {
-                    "on-secondary-fixed-variant": "#333b9c",
-                    "surface-tint": "#104af0",
-                    "on-surface-variant": "#434656",
-                    "error-container": "#ffdad6",
-                    "surface-dim": "#d8dadf",
-                    "on-surface": "#191c1f",
-                    "surface-container-low": "#f2f3f8",
-                    "on-secondary-fixed": "#00046a",
-                    "on-tertiary": "#ffffff",
-                    "inverse-on-surface": "#eff0f5",
-                    "primary-fixed-dim": "#b8c3ff",
-                    "on-secondary": "#ffffff",
-                    "tertiary-container": "#a55900",
-                    "inverse-surface": "#2e3134",
-                    "surface-container-lowest": "#ffffff",
-                    "inverse-primary": "#b8c3ff",
-                    "on-primary": "#ffffff",
-                    "on-tertiary-fixed": "#2e1500",
-                    "on-error": "#ffffff",
-                    "on-primary-fixed-variant": "#0035bd",
-                    "on-primary-container": "#efefff",
-                    "on-tertiary-fixed-variant": "#6d3900",
-                    "error": "#ba1a1a",
-                    "primary-container": "#2d5bff",
-                    "outline-variant": "#c4c5d9",
-                    "surface-container-highest": "#e1e2e7",
-                    "on-tertiary-container": "#ffece0",
-                    "surface-bright": "#f8f9fe",
-                    "tertiary-fixed-dim": "#ffb77c",
-                    "on-background": "#191c1f",
-                    "surface-variant": "#e1e2e7",
-                    "background": "#f8f9fe",
-                    "on-secondary-container": "#21298c",
-                    "on-error-container": "#93000a",
-                    "secondary": "#4c54b6",
-                    "tertiary-fixed": "#ffdcc2",
-                    "surface": "#f8f9fe",
-                    "surface-container-high": "#e7e8ed",
-                    "secondary-fixed": "#e0e0ff",
-                    "primary": "#0040df",
-                    "tertiary": "#814500",
-                    "secondary-container": "#8f98fe",
-                    "secondary-fixed-dim": "#bec2ff",
-                    "surface-container": "#eceef3",
-                    "primary-fixed": "#dde1ff",
-                    "outline": "#747688",
-                    "on-primary-fixed": "#001355"
-            },
-            "borderRadius": {
-                    "DEFAULT": "1rem",
-                    "lg": "2rem",
-                    "xl": "3rem",
-                    "full": "9999px"
-            },
-            "fontFamily": {
-                    "headline": ["Manrope"],
-                    "body": ["Inter"],
-                    "label": ["Inter"]
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#333b9c",
+                        "surface-tint": "#104af0",
+                        "on-surface-variant": "#434656",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#d8dadf",
+                        "on-surface": "#191c1f",
+                        "surface-container-low": "#f2f3f8",
+                        "on-secondary-fixed": "#00046a",
+                        "on-tertiary": "#ffffff",
+                        "inverse-on-surface": "#eff0f5",
+                        "primary-fixed-dim": "#b8c3ff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#a55900",
+                        "inverse-surface": "#2e3134",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#b8c3ff",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#2e1500",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#0035bd",
+                        "on-primary-container": "#efefff",
+                        "on-tertiary-fixed-variant": "#6d3900",
+                        "error": "#ba1a1a",
+                        "primary-container": "#2d5bff",
+                        "outline-variant": "#c4c5d9",
+                        "surface-container-highest": "#e1e2e7",
+                        "on-tertiary-container": "#ffece0",
+                        "surface-bright": "#f8f9fe",
+                        "tertiary-fixed-dim": "#ffb77c",
+                        "on-background": "#191c1f",
+                        "surface-variant": "#e1e2e7",
+                        "background": "#f8f9fe",
+                        "on-secondary-container": "#21298c",
+                        "on-error-container": "#93000a",
+                        "secondary": "#4c54b6",
+                        "tertiary-fixed": "#ffdcc2",
+                        "surface": "#f8f9fe",
+                        "surface-container-high": "#e7e8ed",
+                        "secondary-fixed": "#e0e0ff",
+                        "primary": "#0040df",
+                        "tertiary": "#814500",
+                        "secondary-container": "#8f98fe",
+                        "secondary-fixed-dim": "#bec2ff",
+                        "surface-container": "#eceef3",
+                        "primary-fixed": "#dde1ff",
+                        "outline": "#747688",
+                        "on-primary-fixed": "#001355"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
             }
-          },
-        },
-      }
+        }
     </script>
 <style>
-        body { font-family: 'Inter', sans-serif; }
-        h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
         .glass-header {
             background: rgba(248, 249, 254, 0.8);
             backdrop-filter: blur(20px);
         }
-        .hero-gradient {
+        .main-card-gradient {
             background: linear-gradient(135deg, #0040df 0%, #8f98fe 100%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
         }
     </style>
 <style>
@@ -97,167 +99,128 @@
     }
   </style>
   </head>
-<body class="bg-background text-on-surface antialiased min-h-screen pb-32">
+<body class="bg-background font-body text-on-surface antialiased min-h-screen">
 <!-- TopAppBar -->
-<header class="fixed top-0 w-full z-50 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm dark:shadow-none">
+<nav class="fixed top-0 w-full z-50 glass-header shadow-sm dark:shadow-none">
 <div class="flex justify-between items-center w-full px-6 py-4 max-w-screen-xl mx-auto">
 <div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-full overflow-hidden bg-slate-200">
-<img alt="User profile photo" class="w-full h-full object-cover" data-alt="Close-up portrait of a professional man with a friendly expression, soft studio lighting, clean background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7llFo4oInf4NgjkQmOOA51EUHDjbFNIXi6uc1cBa6t76RXc5d9l1fXcVYPqOMSammpFx7saZsAKdWEeract_AtoaJBgqPPGlClAK8Oa5Y_ywHrLCY_13K0i8ASo2Ii_r8WHHyXweuHJJHAnNavbQnAEK85uy10dFhwzEVzTTa4G4RUTZCf7y4Dlms2pqXWkICGIGJrNi0Z1atJ1tDoz-VYxd_F1aX29rWpa0wFyHHc7qi6dzqtvmVr6MFC0cygt28NHyMBwG85B9o"/>
-</div>
+<img alt="Profile" class="w-10 h-10 rounded-full object-cover" data-alt="professional headshot of a refined executive against a soft gray studio background with natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4F-HCJI9jf1esCGmTgkuDPRsDZY7Stt9JXc04TUPL0kwsYwNXVigeEqcEaXW2DCUu1F1J_hGzL-rySkDmZq_u-CmlT-YdHaOXgytigwy15s4R24bnSp9Dhm0mv9X_oMJZ9iShIOGdPl2lp9Cy4Edxofo2NtLgduAo6Jllg_jFX-ve2QijMIA39e3gTd3SQcVaLFgSMsskbUV9FBTpS5elwRAk7tBjE7MmfXk2ojVQSAkWKjQ6-j5csyEXacq9WEQMDFiQrfCBKVnE"/>
 <span class="text-xl font-extrabold text-slate-900 dark:text-slate-50 font-manrope">Sovereign</span>
 </div>
-<div class="flex items-center gap-2">
-<div class="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full">
+<div class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800">
 <span class="relative flex h-2 w-2">
 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
 <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
 </span>
-<span class="text-sm font-bold tracking-tight font-manrope text-blue-600 dark:text-blue-400">Protected</span>
+<span class="font-manrope font-bold text-lg tracking-tight text-blue-600 dark:text-blue-400">Protected</span>
 </div>
 </div>
-</div>
+</nav>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto space-y-8">
+<!-- Header Section -->
+<header class="space-y-2">
+<h1 class="font-headline text-4xl font-extrabold tracking-tight text-on-surface">Secure Transfer</h1>
+<p class="text-on-surface-variant font-medium">Verify recipient identity before final execution.</p>
 </header>
-<main class="pt-24 px-6 max-w-screen-xl mx-auto space-y-8">
-<!-- Hero Section: Luminous Vault -->
-<section class="hero-gradient rounded-xl p-8 text-on-primary shadow-lg relative overflow-hidden">
-<div class="relative z-10 space-y-6">
+<!-- Liquidity Card (Bento Style) -->
+<section class="main-card-gradient p-8 rounded-xl text-on-primary shadow-lg overflow-hidden relative group">
+<div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-110 transition-transform duration-700"></div>
+<div class="relative z-10 flex flex-col gap-6">
+<div class="flex justify-between items-start">
 <div>
-<p class="text-primary-fixed/80 font-medium mb-1">Welcome back, Christopher</p>
-<h1 class="text-3xl font-extrabold tracking-tight font-headline">Total Secured Balance</h1>
+<p class="text-primary-fixed/80 font-label font-semibold tracking-wider text-xs uppercase">Available Liquidity</p>
+<h2 class="font-headline text-4xl font-extrabold mt-1 tracking-tight">$142,850.00</h2>
 </div>
-<div class="flex items-baseline gap-2">
-<span class="text-5xl font-extrabold font-headline tracking-tighter">₹3,42,580</span>
-<span class="text-primary-fixed/90 font-medium">.00</span>
-</div>
-<div class="flex gap-4 pt-4">
-<button class="bg-surface-container-lowest text-primary px-8 py-3 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform">
-<span class="material-symbols-outlined">send</span>
-                        Transfer
-                    </button>
-</div>
-</div>
-<!-- Decorative Grain/Texture -->
-<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDurk18RbYGiXK-4NHSi9488cHojsYxkb0UsMXVvbEIKb2Jw3mqGA_HkstQ7UpWGNg4MXeXXKWHxAxMV1yLv_MuQOD8c1IQ8NPgVo6IcEi82wNLnQtc0A48EEHYAUhVD7Bv5shT4Doo1XcUUaWQOdUz6O8yaOzhDltNF6KoVzvVD8qh0lRf7j5Nxjl-pJ_kaCmkDSwbI1ZYZ-H4vdht1PdgPGPXSo3yGshF8xc6-Oo2kfFL4UtfWj69qWrRo24Jptx-GtnyxeQsBrFH');"></div>
-</section>
-<!-- Bento Grid: Actions & Insights -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-<!-- BehaviorShield™ Monitor -->
-<div class="md:col-span-2 bg-surface-container-lowest p-8 rounded-lg shadow-[0_12px_24px_0_rgba(25,28,31,0.04)] flex flex-col justify-between">
-<div class="flex justify-between items-start mb-8">
-<div>
-<h2 class="text-xl font-bold font-headline mb-1">BehaviorShield™</h2>
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">verified_user</span>
-<span class="text-sm text-on-surface-variant font-medium">Active Monitoring</span>
-</div>
-</div>
-<div class="text-right">
-<span class="text-3xl font-extrabold font-headline text-primary">98%</span>
-<p class="text-xs text-outline font-bold uppercase tracking-widest">Secure</p>
+<div class="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+<span class="material-symbols-outlined text-3xl">account_balance_wallet</span>
 </div>
 </div>
 <div class="space-y-3">
-<div class="w-full bg-surface-container-highest h-3 rounded-full overflow-hidden">
-<div class="bg-primary h-full rounded-full" style="width: 98%"></div>
+<div class="flex justify-between text-sm font-medium">
+<span>Daily Limit Status</span>
+<span>82% Used</span>
 </div>
-<p class="text-sm text-on-surface-variant">No unusual patterns detected in your last 48 hours of activity.</p>
-</div>
-</div>
-<!-- Quick Access Column -->
-<div class="flex flex-col gap-6">
-<div class="bg-surface-container-low p-6 rounded-lg flex items-center justify-between hover:bg-surface-container-high transition-colors cursor-pointer group">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
-<span class="material-symbols-outlined">history</span>
-</div>
-<span class="font-bold font-headline">Activity History</span>
-</div>
-<span class="material-symbols-outlined text-outline">chevron_right</span>
-</div>
-<div class="bg-surface-container-low p-6 rounded-lg flex items-center justify-between hover:bg-surface-container-high transition-colors cursor-pointer group">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
-<span class="material-symbols-outlined">person</span>
-</div>
-<span class="font-bold font-headline">Profile</span>
-</div>
-<span class="material-symbols-outlined text-outline">chevron_right</span>
+<div class="h-3 w-full bg-white/20 rounded-full overflow-hidden">
+<div class="h-full bg-white rounded-full w-[82%]" style="box-shadow: 0 0 15px rgba(255,255,255,0.4)"></div>
 </div>
 </div>
 </div>
-<!-- Recent Vault Activity -->
+</section>
+<!-- Transfer Type Toggle -->
+<div class="bg-surface-container-low p-1.5 rounded-full flex gap-1">
+<button class="flex-1 py-3 px-6 rounded-full bg-surface-container-lowest shadow-sm text-primary font-bold font-manrope transition-all">
+                One-time
+            </button>
+<button class="flex-1 py-3 px-6 rounded-full text-on-surface-variant font-bold font-manrope hover:bg-surface-container-high transition-all">
+                Recurring
+            </button>
+</div>
+<!-- Recipient Form -->
 <section class="space-y-6">
-<div class="flex justify-between items-end">
-<h2 class="text-2xl font-extrabold font-headline">Recent Vault Activity</h2>
-<button class="text-primary font-bold text-sm">View All</button>
-</div>
-<div class="bg-surface-container-low rounded-lg p-2 space-y-2">
-<!-- Transaction Item -->
-<div class="bg-surface-container-lowest p-5 rounded-md flex items-center justify-between transition-all hover:translate-x-1">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-full bg-on-surface/5 flex items-center justify-center">
-<span class="material-symbols-outlined text-on-surface">shopping_bag</span>
-</div>
-<div>
-<p class="font-bold font-headline">Apple Store</p>
-<p class="text-sm text-on-surface-variant">Electronic &amp; Media</p>
+<div class="space-y-4">
+<div class="group">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2 px-1">Recipient Identity</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest px-6 py-5 rounded-lg text-on-surface font-semibold placeholder:text-outline-variant border-none focus:ring-2 focus:ring-surface-tint/30 shadow-sm transition-all" placeholder="Name or Global ID" type="text"/>
+<span class="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 text-outline">verified_user</span>
 </div>
 </div>
-<div class="text-right">
-<p class="font-bold font-headline text-on-surface">-₹89,900</p>
-<p class="text-xs text-outline">Today, 2:45 PM</p>
-</div>
-</div>
-<!-- Transaction Item -->
-<div class="bg-surface-container-lowest p-5 rounded-md flex items-center justify-between transition-all hover:translate-x-1">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center">
-<span class="material-symbols-outlined text-tertiary">account_balance_wallet</span>
-</div>
-<div>
-<p class="font-bold font-headline">Vault Interest</p>
-<p class="text-sm text-on-surface-variant">Passive Yield</p>
-</div>
-</div>
-<div class="text-right">
-<p class="font-bold font-headline text-tertiary">+₹1,240</p>
-<p class="text-xs text-outline">Yesterday</p>
-</div>
-</div>
-<!-- Transaction Item -->
-<div class="bg-surface-container-lowest p-5 rounded-md flex items-center justify-between transition-all hover:translate-x-1">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-full bg-on-surface/5 flex items-center justify-center">
-<span class="material-symbols-outlined text-on-surface">bolt</span>
-</div>
-<div>
-<p class="font-bold font-headline">Electric Utility</p>
-<p class="text-sm text-on-surface-variant">Recurring Bill</p>
-</div>
-</div>
-<div class="text-right">
-<p class="font-bold font-headline text-on-surface">-₹4,200</p>
-<p class="text-xs text-outline">Oct 24, 2023</p>
+<div class="group">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2 px-1">Transfer Amount</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest px-6 py-6 rounded-lg text-4xl font-headline font-extrabold text-primary placeholder:text-surface-container-highest border-none focus:ring-2 focus:ring-surface-tint/30 shadow-sm transition-all" placeholder="$ 0.00" type="text"/>
+<div class="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-primary-fixed/30 px-3 py-1 rounded-full">
+<span class="text-xs font-bold text-on-primary-fixed">USD</span>
 </div>
 </div>
 </div>
+</div>
+<!-- Recent Recipients Row -->
+<div class="space-y-4">
+<h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest px-1">Recent Recipient Nodes</h3>
+<div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+<button class="flex-shrink-0 w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center border-2 border-dashed border-outline-variant hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-outline">add</span>
+</button>
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<img alt="Recipient 1" class="w-16 h-16 rounded-full object-cover border-2 border-surface shadow-md" data-alt="close up portrait of a young man with a friendly expression in a modern professional office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCa-pGb63oVe6_w8aCNY___9ogW3m1sLYZfSeY8zh9JHnSUrYwK7miLVY7Oh6GxDVqhONvteIhyMSvCMsZpyHHKCxOw9V1IuqW6Vz88MrV3raOi36TZVouPkQTjON5nlBukIy0qhHb_iyao2HXboFDglUEMXBEG0R5PIsWVAjivjmZSQTSj2QqZgAMmJ4P9ZskGH-9_SjXS_Y3qXV13Jkhl5VgIW49EHwK6Cy1Itt513SjJv846FKgJPWyqTgMy_WyqRK9XYfuaoGtS"/>
+<span class="text-[10px] font-bold text-on-surface-variant">JULIAN</span>
+</div>
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<img alt="Recipient 2" class="w-16 h-16 rounded-full object-cover border-2 border-surface shadow-md" data-alt="smiling woman with long dark hair wearing a neutral silk blouse in high-end minimalist environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBteGSA-VKGM3NNpGLgsGgns9LOZBDGurzdk-Ks3_OL0mHt6AzRequY8rn2DraXYx43X6gDC5UGGzrZfWMl2lAUhQHuPvqg2VTF3LNQVxQ0PZTmpyiZSibXcEhz4hQDBYW1b1eAjL92wIwJ_8LTatWHaYPDN39R4H9lFWxnzoO3oU54Bfc3UwvZI7EJbZa3GbrcGd3-kEgKTUxsJ0zx3stNjQuPzpGEhJoPZajr5Ze9RZ7jjQwsGlj7OiLs8CxXqjNU15FcEFv1j-0x"/>
+<span class="text-[10px] font-bold text-on-surface-variant">ELARA</span>
+</div>
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<img alt="Recipient 3" class="w-16 h-16 rounded-full object-cover border-2 border-surface shadow-md" data-alt="portrait of an older man with glasses looking confident and secure in a brightly lit glass atrium" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjftG6MM_X92bDsDVFVXtqB8858-hxD6IewEToSLxWxB6dJD66XhIkxKfTYgw9s3AmSr1xBaCr7zV5R_jBe66HNawUyGHMxXMmQkKAetTgqSqtNzwS9B1pO6qUpHRXFR6Y1iiFM-U9yKHNJAAurLx179Zz6K849C9AAVMDqPngBKDVNvVdyNIGKFQjGhuEdWc6Kc9rwAu3K3837HPgS0Uw-F8Hv8doYAp0anSZu7uajGRFVIv8SRWwmYSKMW3AZtNkOSisoPIzvwxe"/>
+<span class="text-[10px] font-bold text-on-surface-variant">MARCUS</span>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full py-6 rounded-full bg-primary text-white font-headline text-lg font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">security</span>
+                Execute Secure Transfer
+            </button>
 </section>
 </main>
 <!-- BottomNavBar -->
 <nav class="fixed bottom-0 w-full z-50 rounded-t-3xl bg-slate-50 dark:bg-slate-900 shadow-[0_-4px_24px_0_rgba(25,28,31,0.04)]">
-<div class="flex justify-around items-center px-4 py-3 pb-8 w-full">
-<a class="bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-100 rounded-full px-6 py-2 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95" href="#">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+<div class="flex justify-around items-center px-4 py-3 pb-8 w-full max-w-screen-xl mx-auto">
+<!-- Vault (account_balance) -->
+<a class="text-slate-400 dark:text-slate-500 px-6 py-2 flex items-center justify-center hover:scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="account_balance">account_balance</span>
 </a>
-<a class="text-slate-400 dark:text-slate-500 px-6 py-2 flex items-center justify-center hover:scale-110 transition-transform active:scale-95" href="#">
-<span class="material-symbols-outlined">shield</span>
+<!-- Shield (shield) -->
+<a class="text-slate-400 dark:text-slate-500 px-6 py-2 flex items-center justify-center hover:scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="shield">shield</span>
 </a>
-<a class="text-slate-400 dark:text-slate-500 px-6 py-2 flex items-center justify-center hover:scale-110 transition-transform active:scale-95" href="#">
-<span class="material-symbols-outlined">swap_horiz</span>
+<!-- Transfer (swap_horiz) - ACTIVE -->
+<a class="bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-100 rounded-full px-6 py-2 flex items-center justify-center transition-all duration-300 scale-105" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="swap_horiz" style="font-variation-settings: 'FILL' 1;">swap_horiz</span>
 </a>
-<a class="text-slate-400 dark:text-slate-500 px-6 py-2 flex items-center justify-center hover:scale-110 transition-transform active:scale-95" href="#">
-<span class="material-symbols-outlined">history</span>
+<!-- History (history) -->
+<a class="text-slate-400 dark:text-slate-500 px-6 py-2 flex items-center justify-center hover:scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="history">history</span>
 </a>
 </div>
 </nav>
