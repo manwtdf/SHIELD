@@ -1,136 +1,198 @@
-# CLAUDE.md — SHIELD: Session-based Heuristic Intelligence for Event Level Defense
+# CLAUDE.md — SHIELD: SIM Swap Fraud Prevention via Behavioral Biometrics
 
-> Agent-optimized build specification. Follow sections in order. Each phase has explicit
-> entry conditions, numbered steps, and a binary done-check. Do not proceed to the next
-> phase until the done-check passes.
+> Agent-optimized build specification. Follow phases in strict order.
+> Each phase has explicit entry conditions, numbered steps, and a binary done-check.
+> Do not proceed to the next phase until the done-check passes.
+> Read README.md first for full system context.
 
 ---
 
-## 0. PROJECT SNAPSHOT
+## 0. ORIENTATION
 
-| Field | Value |
-|---|---|
-| Project name | SHIELD |
-| Track | Smart Security |
-| Core problem | SIM swap fraud drains Indian bank accounts in 4 minutes. Banks detect it never. |
-| Core solution | Behavioral biometric layer — device-independent fingerprint — detects the fraudster's behavioral discontinuity in under 30 seconds |
-| Demo format | Laptop-only, fully simulated, no hardware |
-| Build time | 48 hours |
-| Stack | React 18 + TypeScript + FastAPI + scikit-learn + SQLite + Twilio |
+```
+3 frontends, 1 backend, 1 ML engine, 6 attack scenarios.
 
----aWWWWAWWWWQQQQQQ
+Frontend 1: Mobile Banking App     → localhost:5173/           (victim/attacker's interface)
+Frontend 2: Analyst Dashboard      → localhost:5173/dashboard  (judge-facing centerpiece)
+Frontend 3: Attack Simulator       → localhost:5173/simulator  (demo control panel)
+Backend:    FastAPI                → localhost:8000
+Database:   SQLite                 → backend/behaviourshield.db
+Models:     Pickle files           → backend/models/
+
+Build order: Phase 1 (DB + data) → Phase 2 (ML) → Phase 3 (API) →
+             Phase 4 (Frontend 1) → Phase 5 (Frontend 2) → Phase 6 (Frontend 3) →
+             Phase 7 (Seed runner + automation) → Phase 8 (Tests)
+```
+
+---
+
+## 1. REPOSITORY SETUP
+
 Create this exact structure before writing any code:
 
 ```
 behaviourshield/
-├── CLAUDE.md                        # this file
 ├── README.md
+├── CLAUDE.md
+├── .env
 ├── .env.example
 ├── .gitignore
 │
-├── frontend/                        # React 18 + TypeScript
+├── frontend/
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── vite.config.ts
+│   ├── tailwind.config.js
+│   ├── index.html
 │   └── src/
 │       ├── main.tsx
 │       ├── App.tsx
-│       ├── components/
-│       │   ├── BankingApp.tsx        # mock bank UI — login, dashboard, transfer
-│       │   ├── ScoreDashboard.tsx    # live confidence score + anomaly feed
-│       │   ├── AttackSimulator.tsx   # triggers attacker session
-│       │   ├── EnrollmentPanel.tsx   # shows enrollment progress (0→10 sessions)
-│       │   └── AlertBanner.tsx       # transaction freeze + SMS fired notification
+│       ├── apps/
+│       │   ├── BankingApp/
+│       │   │   ├── index.tsx
+│       │   │   ├── screens/
+│       │   │   │   ├── Login.tsx
+│       │   │   │   ├── Dashboard.tsx
+│       │   │   │   ├── Transfer.tsx
+│       │   │   │   ├── OTPScreen.tsx
+│       │   │   │   └── FreezeModal.tsx
+│       │   │   └── components/
+│       │   │       ├── ShieldBadge.tsx
+│       │   │       └── PhoneFrame.tsx
+│       │   ├── AnalystDashboard/
+│       │   │   ├── index.tsx
+│       │   │   ├── panels/
+│       │   │   │   ├── UserProfile.tsx
+│       │   │   │   ├── ScorePanel.tsx
+│       │   │   │   ├── AlertFeed.tsx
+│       │   │   │   ├── AnomalyList.tsx
+│       │   │   │   ├── SessionTimeline.tsx
+│       │   │   │   └── FeatureTable.tsx
+│       │   │   └── components/
+│       │   │       ├── RiskBadge.tsx
+│       │   │       └── ScoreChart.tsx
+│       │   └── AttackSimulator/
+│       │       ├── index.tsx
+│       │       ├── panels/
+│       │       │   ├── ScenarioSelector.tsx
+│       │       │   ├── StepControls.tsx
+│       │       │   ├── ComparisonTable.tsx
+│       │       │   ├── FeatureInspector.tsx
+│       │       │   └── LegacyContrast.tsx
+│       │       └── scenarios/
+│       │           ├── scenario1.ts
+│       │           ├── scenario2.ts
+│       │           ├── scenario3.ts
+│       │           ├── scenario4.ts
+│       │           ├── scenario5.ts
+│       │           ├── scenario6.ts
+│       │           └── legitimate.ts
 │       ├── hooks/
-│       │   ├── useBehaviorSDK.ts     # captures touch, keyboard, motion, navigation
-│       │   └── useScoreStream.ts     # polls /api/score every 2s during active session
+│       │   ├── useBehaviorSDK.ts
+│       │   ├── useScoreStream.ts
+│       │   ├── useSession.ts
+│       │   └── useSimulator.ts
 │       ├── lib/
-│       │   ├── api.ts                # typed fetch wrappers for all backend endpoints
-│       │   └── featureExtractor.ts   # client-side 47-feature vector construction
+│       │   ├── api.ts
+│       │   ├── featureExtractor.ts
+│       │   └── constants.ts
 │       └── types/
-│           └── index.ts              # ScoreResponse, FeatureVector, SessionEvent types
+│           └── index.ts
 │
-├── backend/                         # FastAPI + Python 3.11
+├── backend/
 │   ├── requirements.txt
-│   ├── main.py                      # FastAPI app, CORS, router registration
+│   ├── main.py
 │   ├── routers/
-│   │   ├── session.py               # POST /session/start, POST /session/feature
-│   │   ├── score.py                 # GET /score/{session_id}
-│   │   ├── enroll.py                # POST /enroll/{user_id}
-│   │   ├── sim_swap.py              # POST /sim-swap/trigger (mock telecom event)
-│   │   └── alert.py                 # POST /alert/send (Twilio SMS)
+│   │   ├── session.py
+│   │   ├── score.py
+│   │   ├── enroll.py
+│   │   ├── sim_swap.py
+│   │   ├── alert.py
+│   │   ├── scenarios.py
+│   │   ├── features.py
+│   │   └── fleet.py
 │   ├── ml/
-│   │   ├── feature_schema.py        # canonical 47-feature definition + validation
-│   │   ├── one_class_svm.py         # train, predict, calibrate (Platt scaling)
-│   │   ├── lstm_autoencoder.py      # advanced variant — optional, shown as roadmap
-│   │   └── score_fusion.py          # combines behavior score + SIM swap signal
+│   │   ├── feature_schema.py
+│   │   ├── one_class_svm.py
+│   │   ├── lstm_autoencoder.py
+│   │   ├── score_fusion.py
+│   │   ├── fleet_anomaly.py
+│   │   └── anomaly_explainer.py
 │   ├── data/
-│   │   ├── seed_legitimate.py       # generates 10 legitimate user sessions
-│   │   ├── seed_attacker.py         # generates attacker session with behavioral drift
-│   │   └── profiles.json            # pre-seeded user + attacker behavioral params
+│   │   ├── seed_legitimate.py
+│   │   ├── seed_scenarios.py
+│   │   └── profiles.json
 │   ├── db/
-│   │   ├── database.py              # SQLite connection + init
-│   │   └── models.py                # Session, FeatureVector, AlertLog tables
-│   └── utils/
-│       ├── twilio_client.py         # SMS alert wrapper
-│       └── scoring.py               # score → risk_level → action mapping
+│   │   ├── database.py
+│   │   └── models.py
+│   ├── utils/
+│   │   ├── twilio_client.py
+│   │   └── scoring.py
+│   ├── models/                        ← auto-created by seed_runner.py
+│   └── tests/
+│       ├── test_model.py
+│       ├── test_routes.py
+│       └── test_scenarios.py
 │
 └── demo/
-    ├── demo_script.md               # 8-minute step-by-step judge demo script
-    ├── backup_video.md              # instructions for recording backup demo
-    └── seed_runner.py               # one command: seeds all data + trains model
+    ├── demo_script.md
+    ├── seed_runner.py
+    ├── backup_video.md
+    └── judge_qa.md
 ```
 
 ---
 
 ## 2. ENVIRONMENT SETUP
 
-### 2.1 Create `.env` from template
+### 2.1 Install dependencies
 
 ```bash
-cp .env.example .env
+# Backend
+cd backend
+python -m venv venv && source venv/bin/activate
+pip install fastapi uvicorn[standard] scikit-learn torch numpy pandas \
+            sqlalchemy twilio python-dotenv pydantic scipy
+
+# Frontend
+cd frontend
+npm create vite@latest . -- --template react-ts
+npm install recharts framer-motion axios tailwindcss @tailwindcss/vite \
+            lucide-react react-router-dom
 ```
 
-`.env.example` contents — fill all before starting Phase 3:
+### 2.2 `.env.example`
 
 ```
-# Twilio (get free trial at twilio.com — actually sends SMS in demo)
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_FROM_NUMBER=+1xxxxxxxxxx
-DEMO_ALERT_NUMBER=+91xxxxxxxxxx    # your phone — receives the live SMS in demo
+DEMO_ALERT_NUMBER=+91xxxxxxxxxx
 
-# App
 BACKEND_URL=http://localhost:8000
 FRONTEND_URL=http://localhost:5173
 SECRET_KEY=replace_with_random_32_char_string
 
-# Model
 SVM_NU=0.05
 SCORE_BLOCK_THRESHOLD=30
 SCORE_STEPUP_THRESHOLD=45
 ENROLLMENT_SESSIONS_REQUIRED=10
+
+DEMO_MODE=true
 ```
 
-### 2.2 Backend setup
+### 2.3 App.tsx routing
 
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install fastapi uvicorn[standard] scikit-learn torch numpy pandas \
-            sqlalchemy twilio python-dotenv pydantic scipy
+```tsx
+// Three apps, three routes
+<Routes>
+  <Route path="/"           element={<BankingApp />} />
+  <Route path="/dashboard"  element={<AnalystDashboard />} />
+  <Route path="/simulator"  element={<AttackSimulator />} />
+</Routes>
 ```
 
-### 2.3 Frontend setup
-
-```bash
-cd frontend
-npm create vite@latest . -- --template react-ts
-npm install recharts framer-motion axios tailwindcss @tailwindcss/vite lucide-react
-```
-
-### 2.4 Start both servers
+### 2.4 Start commands
 
 ```bash
 # Terminal 1
@@ -140,243 +202,323 @@ cd backend && uvicorn main:app --reload --port 8000
 cd frontend && npm run dev
 ```
 
+**Done-check setup:**
+- [ ] Both servers start with no errors
+- [ ] `localhost:5173/`, `/dashboard`, `/simulator` all render (even if blank)
+- [ ] `localhost:8000/docs` shows FastAPI auto-docs
+
 ---
 
-## 3. PHASE 1 — DATA LAYER & FEATURE SCHEMA (Hours 0–4)
+## 3. PHASE 1 — DATA LAYER (Hours 0–4)
 
-**Entry condition:** Repo structure created, `.env` filled, both servers start without errors.
+**Entry condition:** Setup done-check passed.
 
-### 3.1 Define the 47-feature vector
-
-In `backend/ml/feature_schema.py`, define exactly these features in this order:
+### 3.1 Feature schema (`backend/ml/feature_schema.py`)
 
 ```python
 FEATURE_NAMES = [
-    # Touch Dynamics (8 features)
-    "tap_pressure_mean",          # mean force sensor value across session taps
-    "tap_pressure_std",           # std dev of tap pressure
-    "swipe_velocity_mean",        # mean pixels/ms across all swipe events
-    "swipe_velocity_std",
-    "gesture_curvature_mean",     # mean deviation from straight line in swipes
-    "pinch_zoom_accel_mean",      # mean acceleration of pinch-to-zoom gestures
-    "tap_duration_mean",          # mean time finger is on screen per tap (ms)
-    "tap_duration_std",
-
-    # Typing Biometrics (10 features)
-    "inter_key_delay_mean",       # mean time between consecutive keypresses (ms)
-    "inter_key_delay_std",
-    "inter_key_delay_p95",        # 95th percentile — catches burst typing
-    "dwell_time_mean",            # mean time each key is held down (ms)
-    "dwell_time_std",
-    "error_rate",                 # backspace count / total keystrokes
-    "backspace_frequency",        # backspaces per minute
-    "typing_burst_count",         # number of distinct typing bursts per session
-    "typing_burst_duration_mean", # mean duration of each burst (ms)
-    "words_per_minute",           # estimated WPM from session
-
-    # Device Motion (8 features)
-    "accel_x_std",                # std dev of X-axis accelerometer during typing
-    "accel_y_std",
-    "accel_z_std",
-    "gyro_x_std",                 # std dev of gyroscope X during session
-    "gyro_y_std",
-    "gyro_z_std",
-    "device_tilt_mean",           # mean device angle from vertical (degrees)
-    "hand_stability_score",       # inverse of motion variance — higher = steadier
-
-    # Navigation Graph (9 features)
-    "screens_visited_count",      # total unique screens visited
-    "navigation_depth_max",       # deepest nav stack depth reached
-    "back_navigation_count",      # number of back button presses
-    "time_on_dashboard_ms",       # time spent on home/dashboard screen
-    "time_on_transfer_ms",        # time spent on transfer/payment screen
-    "direct_to_transfer",         # 1 if went straight to transfer, 0 otherwise
-    "form_field_order_entropy",   # entropy of field completion order (0=linear)
-    "session_revisit_count",      # number of times a screen was revisited
-    "exploratory_ratio",          # back_navigations / total navigations
-
-    # Temporal Behavior (8 features)
-    "session_duration_ms",        # total session length
-    "session_duration_z_score",   # z-score vs user's historical mean
-    "time_of_day_hour",           # hour of session start (0–23)
-    "time_to_submit_otp_ms",      # time between OTP received and submitted
-    "click_speed_mean",           # mean ms between consecutive UI interactions
-    "click_speed_std",
-    "form_submit_speed_ms",       # time from first field focus to submit
-    "interaction_pace_ratio",     # actual pace / historical mean pace
-
-    # Device Context (4 features — categorical, session-level)
-    "is_new_device",              # 1 if device fingerprint not in user's allowlist
-    "device_fingerprint_delta",   # cosine distance from nearest known device
-    "timezone_changed",           # 1 if timezone differs from last 5 sessions
-    "os_version_changed",         # 1 if OS version changed since last session
+    # Touch Dynamics (8)
+    "tap_pressure_mean", "tap_pressure_std", "swipe_velocity_mean",
+    "swipe_velocity_std", "gesture_curvature_mean", "pinch_zoom_accel_mean",
+    "tap_duration_mean", "tap_duration_std",
+    # Typing Biometrics (10)
+    "inter_key_delay_mean", "inter_key_delay_std", "inter_key_delay_p95",
+    "dwell_time_mean", "dwell_time_std", "error_rate", "backspace_frequency",
+    "typing_burst_count", "typing_burst_duration_mean", "words_per_minute",
+    # Device Motion (8)
+    "accel_x_std", "accel_y_std", "accel_z_std",
+    "gyro_x_std", "gyro_y_std", "gyro_z_std",
+    "device_tilt_mean", "hand_stability_score",
+    # Navigation Graph (9)
+    "screens_visited_count", "navigation_depth_max", "back_navigation_count",
+    "time_on_dashboard_ms", "time_on_transfer_ms", "direct_to_transfer",
+    "form_field_order_entropy", "session_revisit_count", "exploratory_ratio",
+    # Temporal Behavior (8)
+    "session_duration_ms", "session_duration_z_score", "time_of_day_hour",
+    "time_to_submit_otp_ms", "click_speed_mean", "click_speed_std",
+    "form_submit_speed_ms", "interaction_pace_ratio",
+    # Device Context (4)
+    "is_new_device", "device_fingerprint_delta", "timezone_changed", "os_version_changed",
 ]
-
 assert len(FEATURE_NAMES) == 47
 ```
 
-### 3.2 Database schema
-
-In `backend/db/models.py`:
+### 3.2 Database schema (`backend/db/models.py`)
 
 ```python
-# Tables required:
+# SQLAlchemy models for these tables:
+#
 # users(id, name, enrolled_at, sessions_count)
-# sessions(id, user_id, started_at, session_type['legitimate'|'attacker'], feature_vector_json)
-# scores(id, session_id, computed_at, confidence_score, risk_level, top_anomalies_json)
-# sim_swap_events(id, user_id, triggered_at, is_active)
-# alert_log(id, session_id, alert_type, sent_at, recipient, message)
+#
+# sessions(id TEXT PK, user_id, started_at, session_type, feature_vector TEXT JSON,
+#          completed BOOL)
+#
+# scores(id TEXT PK, session_id, computed_at, confidence_score INT,
+#        risk_level TEXT, action TEXT, top_anomalies TEXT JSON)
+#
+# sim_swap_events(id TEXT PK, user_id, triggered_at, is_active BOOL)
+#
+# alert_log(id TEXT PK, session_id, alert_type, sent_at, recipient,
+#           message, message_sid)
+#
+# device_registry(id TEXT PK, user_id, device_fingerprint TEXT,
+#                 first_seen, last_seen)
 ```
 
-### 3.3 Seed legitimate sessions
+### 3.3 Legitimate session seeding (`backend/data/seed_legitimate.py`)
 
-In `backend/data/seed_legitimate.py`:
-
-Generate 10 sessions for user_id=1 with these behavioral parameters (simulate a consistent, habitual user):
+Behavioral distribution params for user_id=1 (consistent, habitual user):
 
 ```python
 LEGITIMATE_PROFILE = {
-    "inter_key_delay_mean": (180, 15),     # (mean_ms, std_dev) — consistent typist
-    "inter_key_delay_std": (25, 5),
-    "dwell_time_mean": (95, 8),
-    "swipe_velocity_mean": (450, 30),
-    "session_duration_ms": (240000, 30000), # ~4 min sessions
-    "time_of_day_hour": [9, 10, 18, 19, 20], # user logs in mornings and evenings
-    "direct_to_transfer": 0.15,             # rarely goes straight to transfer
-    "exploratory_ratio": (0.08, 0.02),
-    "is_new_device": 0,
-    "hand_stability_score": (0.82, 0.05),
-    "time_to_submit_otp_ms": (8500, 2000), # takes ~8-9 seconds to enter OTP
+    "inter_key_delay_mean":     (180, 15),
+    "inter_key_delay_std":      (25, 5),
+    "inter_key_delay_p95":      (280, 20),
+    "dwell_time_mean":          (95, 8),
+    "dwell_time_std":           (12, 3),
+    "error_rate":               (0.04, 0.01),
+    "backspace_frequency":      (2.1, 0.5),
+    "typing_burst_count":       (4, 1),
+    "words_per_minute":         (38, 4),
+    "swipe_velocity_mean":      (450, 30),
+    "hand_stability_score":     (0.82, 0.05),
+    "session_duration_ms":      (240000, 30000),
+    "time_of_day_hour":         [9, 10, 18, 19, 20],   # list = sample from
+    "direct_to_transfer":       0.15,                   # scalar = fixed probability
+    "exploratory_ratio":        (0.08, 0.02),
+    "time_to_submit_otp_ms":    (8500, 2000),
+    "is_new_device":            0,
+    "device_fingerprint_delta": (0.05, 0.01),
+    "timezone_changed":         0,
+    "os_version_changed":       0,
 }
+# Generate 10 sessions. Add ±8% within-person variance to all continuous features.
+# Store all as session_type='legitimate' in DB.
 ```
 
-Use `numpy.random` with the above distributions to generate each session's feature vector. Add ±8% within-person variance (from clinical literature cited in spec). Store all 10 in `sessions` table as `session_type='legitimate'`.
+### 3.4 Attack scenario seeding (`backend/data/seed_scenarios.py`)
 
-### 3.4 Seed attacker session
-
-In `backend/data/seed_attacker.py`:
-
-Generate 1 session for user_id=1 but with attacker behavioral parameters:
+Implement all 6 scenario profiles. Attacker profiles must differ from legitimate baseline by > 2.5 sigma on at least 4 features.
 
 ```python
-ATTACKER_PROFILE = {
-    "inter_key_delay_mean": (310, 60),     # slower, unfamiliar keyboard
-    "inter_key_delay_std": (90, 20),       # much higher variance — hunting and pecking
-    "dwell_time_mean": (140, 30),
-    "swipe_velocity_mean": (280, 80),      # slower, less confident gestures
-    "session_duration_ms": (95000, 10000), # very short — under time pressure
-    "time_of_day_hour": [2, 3],            # 2–3 AM attack window
-    "direct_to_transfer": 1,               # goes straight to transfer
-    "exploratory_ratio": (0.35, 0.08),     # lots of back navigation, hunting
-    "is_new_device": 1,                    # new device fingerprint
-    "hand_stability_score": (0.51, 0.1),   # nervous, unfamiliar device
-    "time_to_submit_otp_ms": (2100, 300),  # grabs OTP instantly — automated
+SCENARIO_PROFILES = {
+
+    "scenario_1": {  # New Device + SIM
+        "inter_key_delay_mean":     (310, 60),
+        "inter_key_delay_std":      (90, 20),
+        "dwell_time_mean":          (140, 30),
+        "swipe_velocity_mean":      (280, 80),
+        "hand_stability_score":     (0.51, 0.10),
+        "session_duration_ms":      (95000, 10000),
+        "time_of_day_hour":         [2, 3],
+        "direct_to_transfer":       1,
+        "exploratory_ratio":        (0.35, 0.08),
+        "time_to_submit_otp_ms":    (2100, 300),
+        "is_new_device":            1,
+        "device_fingerprint_delta": (0.94, 0.03),
+    },
+
+    "scenario_2": {  # Laptop + OTP SIM
+        "inter_key_delay_mean":     (145, 20),    # faster on keyboard
+        "swipe_velocity_mean":      0,             # NO touch events
+        "tap_pressure_mean":        0,             # NO touch
+        "form_field_order_entropy": (0.85, 0.10), # tab-order vs tap-order
+        "session_duration_ms":      (110000, 15000),
+        "time_of_day_hour":         [1, 2, 3],
+        "direct_to_transfer":       1,
+        "is_new_device":            1,
+        "device_fingerprint_delta": (0.97, 0.02), # laptop ≠ phone
+        "exploratory_ratio":        (0.28, 0.07),
+        "time_to_submit_otp_ms":    (3200, 500),
+    },
+
+    "scenario_3": {  # Bot Automation
+        "inter_key_delay_mean":     (42, 2),       # inhuman speed
+        "inter_key_delay_std":      (1.5, 0.3),    # inhuman consistency
+        "click_speed_std":          (0.8, 0.2),    # near-zero variance
+        "time_to_submit_otp_ms":    (800, 50),     # instant OTP
+        "interaction_pace_ratio":   (0.05, 0.01),  # too fast
+        "typing_burst_count":       1,             # single continuous burst
+        "error_rate":               0,             # bots don't mistype
+        "direct_to_transfer":       1,
+        "session_duration_ms":      (45000, 3000),
+        "exploratory_ratio":        (0.01, 0.005), # perfectly linear nav
+        "is_new_device":            1,
+    },
+
+    "scenario_4": {  # Same Device Takeover (hardest)
+        "inter_key_delay_mean":     (210, 35),     # slightly off
+        "session_duration_ms":      (95000, 8000), # 60% shorter
+        "direct_to_transfer":       1,
+        "time_of_day_hour":         [3, 4],
+        "time_to_submit_otp_ms":    (3800, 600),   # faster (urgency)
+        "exploratory_ratio":        (0.18, 0.05),
+        "is_new_device":            0,             # KNOWN device
+        "device_fingerprint_delta": (0.08, 0.02),  # same device
+        "hand_stability_score":     (0.71, 0.08),  # somewhat lower
+    },
+
+    "scenario_5": {  # Credential Stuffing + Fleet
+        # Same as scenario_1 but device_fingerprint is SAME across multiple users
+        # fleet_anomaly fires on 2nd account attempt
+        "inter_key_delay_mean":     (290, 55),
+        "is_new_device":            1,
+        "device_fingerprint_delta": (0.91, 0.03),
+        "direct_to_transfer":       1,
+        "time_to_submit_otp_ms":    (1800, 200),
+        "session_duration_ms":      (75000, 8000),
+        "FLEET_FINGERPRINT":        "ATTACKER_DEVICE_ABC123",  # same across accounts
+    },
+
+    "scenario_6": {  # Pre-Auth SIM Probe
+        # No behavioral signals — pure telecom/SMS pattern
+        "PRE_AUTH":                 True,
+        "sms_balance_queries":      3,
+        "ivr_calls":                2,
+        "query_window_seconds":     120,  # 3 queries in 2 minutes
+        # Detection fires before login — no feature vector computed
+    },
 }
 ```
 
+`profiles.json` must contain these same params serialized for the frontend simulator to display.
+
 **Done-check Phase 1:**
-- [ ] `python seed_runner.py` completes without errors
-- [ ] SQLite DB has 10 legitimate sessions + 1 attacker session for user_id=1
-- [ ] All feature vectors are 47-dimensional, no nulls
+- [ ] `python demo/seed_runner.py` completes without errors
+- [ ] DB has: 1 user, 10 legitimate sessions, 6 scenario sessions
+- [ ] All legitimate feature vectors are 47-dimensional, no nulls
+- [ ] `assert len(FEATURE_NAMES) == 47` passes in feature_schema.py
 
 ---
 
-## 4. PHASE 2 — ML MODEL (Hours 4–10)
+## 4. PHASE 2 — ML ENGINE (Hours 4–10)
 
-**Entry condition:** Phase 1 done-check passed. 10 legitimate sessions in DB.
+**Entry condition:** Phase 1 done-check passed.
 
-### 4.1 Train One-Class SVM
-
-In `backend/ml/one_class_svm.py`:
+### 4.1 One-Class SVM (`backend/ml/one_class_svm.py`)
 
 ```python
-# Steps (implement in this order):
-# 1. Load all legitimate sessions for user_id from DB
-# 2. Stack feature vectors into numpy array X of shape (n_sessions, 47)
-# 3. StandardScaler fit on X — save scaler as scaler_{user_id}.pkl
-# 4. Train OneClassSVM(kernel='rbf', nu=0.05, gamma='scale') on scaled X
-# 5. Calibrate raw decision_function output to [0,100] confidence score:
-#    - Collect decision_function scores on training data
-#    - Fit Platt scaling (LogisticRegression on [legitimate=1]) or
-#      min-max normalize using (score - min) / (max - min) * 100
-#    - Invert so that high score = high confidence (legitimate)
-# 6. Save model as model_{user_id}.pkl
-# 7. Expose: train(user_id), predict(user_id, feature_vector) -> int (0-100)
+# Implement these functions in order:
+
+def train(user_id: int) -> None:
+    # 1. Load all legitimate sessions for user_id from DB
+    # 2. Stack feature vectors → numpy array X shape (n, 47)
+    # 3. Fit StandardScaler on X → save as models/scaler_{user_id}.pkl
+    # 4. Fit OneClassSVM(kernel='rbf', nu=0.05, gamma='scale') on scaled X
+    # 5. Calibrate decision_function output to [0,100]:
+    #    - collect decision_function scores on training data
+    #    - min-max normalize, invert so high score = legitimate
+    #    - target: legitimate sessions score 85–95 after calibration
+    # 6. Save model as models/model_{user_id}.pkl
+    # 7. Return: {"baseline_mean": float, "baseline_std": float}
+
+def predict(user_id: int, feature_vector: list[float]) -> int:
+    # 1. Load scaler + model for user_id
+    # 2. Scale feature_vector
+    # 3. Get decision_function score
+    # 4. Apply calibration → return int 0–100
+    # Constraint: must return in < 50ms
+
+def get_baseline_stats(user_id: int) -> dict:
+    # Returns per-feature mean and std from training data
+    # Used by anomaly_explainer.py for z-score computation
 ```
 
-Calibration target: legitimate sessions should score 85–95 after calibration. Attacker session should score below 35.
-
-### 4.2 Score fusion
-
-In `backend/ml/score_fusion.py`:
+### 4.2 Score fusion (`backend/ml/score_fusion.py`)
 
 ```python
 def fuse_score(behavior_score: int, sim_swap_active: bool) -> dict:
     """
-    Fusion rules (apply in order):
-    1. If sim_swap_active AND behavior_score < 45:
-       → final_score = min(behavior_score, 25)
-       → risk_level = "CRITICAL"
-       → action = "BLOCK_AND_FREEZE"
-    2. If sim_swap_active (regardless of score):
-       → final_score = behavior_score * 0.6   # penalize heavily
-       → risk_level = "HIGH" if final_score < 45 else "MEDIUM"
-    3. If behavior_score < 30:
-       → risk_level = "CRITICAL", action = "BLOCK_AND_FREEZE"
-    4. If behavior_score < 45:
-       → risk_level = "HIGH", action = "BLOCK_TRANSACTION"
-    5. If behavior_score < 70:
-       → risk_level = "MEDIUM", action = "STEP_UP_AUTH"
-    6. Else:
-       → risk_level = "LOW", action = "ALLOW"
-    
-    Returns: {final_score, risk_level, action}
+    Apply rules in this exact priority order:
+
+    1. sim_swap_active=True AND behavior_score < 45:
+       final_score = min(behavior_score, 25)
+       → CRITICAL → BLOCK_AND_FREEZE
+
+    2. sim_swap_active=True (any score):
+       final_score = int(behavior_score * 0.6)
+       → recalculate risk on penalized score
+
+    3. behavior_score < 30  → CRITICAL → BLOCK_AND_FREEZE
+    4. behavior_score < 45  → HIGH     → BLOCK_TRANSACTION
+    5. behavior_score < 70  → MEDIUM   → STEP_UP_AUTH
+    6. else                 → LOW      → ALLOW
+
+    Returns: {final_score: int, risk_level: str, action: str}
     """
 ```
 
-### 4.3 Anomaly explanation
-
-In `backend/utils/scoring.py`, implement `get_top_anomalies(feature_vector, baseline_mean, baseline_std)`:
+### 4.3 Anomaly explainer (`backend/ml/anomaly_explainer.py`)
 
 ```python
-# Steps:
-# 1. Compute z-score for each of the 47 features vs. user's baseline
-# 2. Sort features by |z-score| descending
-# 3. Return top 4 anomalies as human-readable strings using this mapping:
 ANOMALY_TEMPLATES = {
-    "inter_key_delay_mean": "Typing inter-key delay {direction} {pct}% {vs_baseline}",
-    "direct_to_transfer": "User went directly to transfer screen — atypical navigation",
-    "is_new_device": "New device fingerprint — never seen for this account",
-    "time_to_submit_otp_ms": "OTP submitted {pct}% faster than user's historical mean",
-    "exploratory_ratio": "Navigation is {pct}% more exploratory than normal",
-    "session_duration_ms": "Session duration {pct}% shorter than user's average",
-    "hand_stability_score": "Device motion stability {pct}% below user's baseline",
-    "time_of_day_hour": "Login at {hour}:00 — outside user's typical hours ({typical})",
-    # ... add for remaining features
+    "inter_key_delay_mean":    "Typing speed {direction} {pct}% from baseline",
+    "time_to_submit_otp_ms":   "OTP submitted {pct}% {direction} than user average",
+    "direct_to_transfer":      "Went directly to transfer — atypical navigation pattern",
+    "is_new_device":           "Device fingerprint unknown — never seen for this account",
+    "exploratory_ratio":       "Navigation {pct}% more exploratory than normal",
+    "hand_stability_score":    "Device motion stability {pct}% below baseline",
+    "session_duration_ms":     "Session {pct}% {direction} than user average",
+    "click_speed_std":         "Interaction timing variance {direction} — possible automation",
+    "swipe_velocity_mean":     "Touch behavior absent — possible non-mobile device",
+    "form_field_order_entropy":"Form completion order atypical",
+    "time_of_day_hour":        "Login at {hour}:00 — outside user's typical hours ({typical})",
+    "typing_burst_count":      "Typing pattern: single unbroken burst — possible automation",
+    "error_rate":              "Zero typing errors — possible automated input",
+    # SIM swap always appended if active:
+    "SIM_SWAP":                "SIM swap event detected {minutes} minutes ago (telecom signal)",
 }
-# 4. Always append SIM swap anomaly string if sim_swap_active=True:
-#    "SIM swap event detected {N} minutes ago"
+
+def get_top_anomalies(
+    feature_vector: list[float],
+    baseline_mean: list[float],
+    baseline_std: list[float],
+    sim_swap_active: bool,
+    n: int = 4,
+) -> list[str]:
+    # 1. Compute z-score for each of 47 features
+    # 2. Sort by abs(z_score) descending
+    # 3. Format top (n-1) using ANOMALY_TEMPLATES
+    # 4. If sim_swap_active: always include SIM_SWAP as the final anomaly
+    # 5. Return exactly n strings
 ```
 
-### 4.4 Score streaming endpoint
+### 4.4 Fleet anomaly (`backend/ml/fleet_anomaly.py`)
 
-`GET /score/{session_id}` — returns current confidence score, updated every time a new feature snapshot is submitted. In the attacker session simulation, score degrades progressively across 5 snapshots:
+```python
+def check_fleet_anomaly(device_fingerprint: str, user_id: int) -> dict:
+    # 1. Query device_registry: how many distinct user_ids have this
+    #    device_fingerprint in the last 60 minutes?
+    # 2. If count >= 2: fleet_anomaly = True
+    # 3. Return: {fleet_anomaly: bool, accounts_seen: int, action: str}
+    # Action: if fleet_anomaly → "FREEZE_ALL_ACCOUNTS"
+```
+
+### 4.5 Score progression for attack scenarios
+
+For each attack scenario, the model must produce score degradation across 5 snapshots.
+Implement by revealing attacker features in 5 equal batches (9–10 features per batch),
+running predict() on each partial vector (zeros for unrevealed features):
 
 ```
-Snapshot 1 (0s):  91  → session starts, looks normal
-Snapshot 2 (6s):  74  → typing anomaly detected
-Snapshot 3 (12s): 58  → navigation anomaly detected  
-Snapshot 4 (18s): 44  → device fingerprint mismatch
-Snapshot 5 (24s): 27  → SIM swap signal fused → CRITICAL
+Scenario 1 target progression: 91 → 74 → 58 → 44 → 27
+Scenario 2 target progression: 91 → 78 → 62 → 47 → 31
+Scenario 3 target progression: 91 → 65 → 41 → 28 → 19  (fastest drop)
+Scenario 4 target progression: 91 → 82 → 71 → 61 → 48  (slowest drop, step-up)
+Scenario 5 target progression: 91 → 72 → 55 → 40 → 22  (+ fleet fires on 2nd account)
+Scenario 6 target progression: N/A (pre-auth, no behavioral scoring)
 ```
 
-These values must come from actual model inference on progressively-revealed feature slices, not hardcoded. Simulate by revealing attacker features in 5 equal batches (9–10 features per snapshot), inferring on each partial vector with zeros for unrevealed features.
+If SVM calibration doesn't hit these targets, adjust nu or recalibrate. Targets are non-negotiable for the demo.
 
 **Done-check Phase 2:**
 - [ ] `predict(user_id=1, legitimate_vector)` returns score ≥ 85
-- [ ] `predict(user_id=1, attacker_vector)` returns score ≤ 35
-- [ ] `get_top_anomalies()` returns exactly 4 strings for attacker session
-- [ ] `fuse_score(score=40, sim_swap_active=True)` returns `risk_level="CRITICAL"`
+- [ ] `predict(user_id=1, scenario_1_vector)` returns score ≤ 30
+- [ ] `predict(user_id=1, scenario_3_vector)` returns score ≤ 20
+- [ ] `predict(user_id=1, scenario_4_vector)` returns score between 44–55
+- [ ] `fuse_score(40, True)` returns `CRITICAL`
+- [ ] `get_top_anomalies()` returns exactly 4 strings for scenario_1
+- [ ] `check_fleet_anomaly("ATTACKER_DEVICE_ABC123", user_id=2)` returns `fleet_anomaly=True` after scenario_5 seeds
 
 ---
 
@@ -384,417 +526,583 @@ These values must come from actual model inference on progressively-revealed fea
 
 **Entry condition:** Phase 2 done-check passed.
 
-### 5.1 FastAPI routes — implement all of these
-
-```
-POST /session/start
-  body: {user_id: int, session_type: "legitimate"|"attacker"}
-  returns: {session_id: str}
-
-POST /session/feature
-  body: {session_id: str, feature_snapshot: dict[str, float]}
-  returns: {score: int, risk_level: str, action: str, top_anomalies: list[str]}
-  side-effect: triggers alert if action == "BLOCK_AND_FREEZE"
-
-GET /score/{session_id}
-  returns: latest ScoreResponse from scores table
-
-POST /enroll/{user_id}
-  body: {} (uses existing legitimate sessions in DB)
-  returns: {enrolled: bool, sessions_used: int, model_saved: bool}
-
-POST /sim-swap/trigger
-  body: {user_id: int}
-  returns: {event_id: str, triggered_at: str}
-  side-effect: sets sim_swap_events.is_active=True for user
-
-POST /sim-swap/clear
-  body: {user_id: int}
-  returns: {cleared: bool}
-
-POST /alert/send
-  body: {session_id: str, alert_type: "SMS"|"LOG", recipient: str}
-  returns: {sent: bool, message_sid: str}
-  side-effect: sends actual Twilio SMS if alert_type=="SMS"
-
-GET /sessions/{user_id}
-  returns: all sessions for user with scores — used by enrollment panel
-```
-
-### 5.2 CORS config
+### 5.1 All routes
 
 ```python
-# In main.py — allow frontend dev server
-app.add_middleware(CORSMiddleware,
+# session.py
+POST /session/start
+  body:    {user_id: int, session_type: str}
+  returns: {session_id: str, started_at: str}
+
+POST /session/feature
+  body:    {session_id: str, feature_snapshot: dict, snapshot_index: int}
+  returns: {score: int, risk_level: str, action: str, top_anomalies: list[str]}
+  effects: save score to DB; if action==BLOCK_AND_FREEZE → call alert/send
+
+POST /session/fleet-check
+  body:    {device_fingerprint: str, user_id: int}
+  returns: {fleet_anomaly: bool, accounts_seen: int, action: str}
+
+# score.py
+GET  /score/{session_id}
+  returns: {score: int, risk_level: str, action: str, top_anomalies: list[str], updated_at: str}
+
+# enroll.py
+POST /enroll/{user_id}
+  body:    {}
+  returns: {enrolled: bool, sessions_used: int, model_saved: bool, baseline_score: float}
+
+# sim_swap.py
+POST /sim-swap/trigger
+  body:    {user_id: int}
+  returns: {event_id: str, triggered_at: str, is_active: bool}
+
+POST /sim-swap/clear
+  body:    {user_id: int}
+  returns: {cleared: bool}
+
+GET  /sim-swap/status/{user_id}
+  returns: {is_active: bool, triggered_at: str|null, minutes_ago: int|null}
+
+# alert.py
+POST /alert/send
+  body:    {session_id: str, alert_type: str, recipient: str}
+  returns: {sent: bool, message_sid: str|null}
+
+# scenarios.py
+GET  /scenarios/list
+  returns: [{id, name, description, expected_score, expected_action, detection_time_s}]
+
+POST /scenarios/{scenario_id}/run
+  body:    {user_id: int}
+  returns: {score_progression: list[int], final_score: int, action: str,
+            detection_time_s: float, top_anomalies: list[str]}
+
+# features.py
+GET  /features/inspect/{session_id}
+  returns: {features: [{name: str, value: float, baseline: float,
+                        z_score: float, flagged: bool}]}
+
+# fleet.py (same as /session/fleet-check but standalone)
+POST /fleet/check
+  body:    {device_fingerprint: str, user_id: int}
+  returns: {fleet_anomaly: bool, accounts_seen: int, affected_users: list[int], action: str}
+```
+
+### 5.2 CORS config in `main.py`
+
+```python
+app.add_middleware(
+    CORSMiddleware,
     allow_origins=["http://localhost:5173"],
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 ```
 
-### 5.3 Twilio SMS
-
-In `backend/utils/twilio_client.py`:
+### 5.3 Twilio SMS (`backend/utils/twilio_client.py`)
 
 ```python
-# send_alert(to_number, score, top_anomalies) sends:
-# "🚨 BehaviorShield Alert: Suspicious activity on your account.
-#  Risk score: 27/100. Reason: Typing delay +80%, new device, SIM swap detected.
-#  Your transaction has been frozen. Call 1800-XXX-XXXX to verify."
+def send_alert(to_number: str, score: int, top_anomalies: list[str]) -> str:
+    # Message format:
+    # "🚨 BehaviorShield Alert: Suspicious activity on your account.
+    #  Risk score: {score}/100.
+    #  Reason: {anomalies[0]}, {anomalies[1]}.
+    #  Your transaction has been frozen. Call 1800-XXX-XXXX to verify."
+    # Returns: message_sid
 ```
 
 **Done-check Phase 3:**
-- [ ] All 8 routes return 200 with correct response shapes (test with curl or httpx)
-- [ ] `POST /sim-swap/trigger` + `POST /session/feature` (attacker vector) = CRITICAL response
-- [ ] Twilio SMS actually arrives on `DEMO_ALERT_NUMBER`
+- [ ] All 12 routes return 200 with correct response shapes (verify with `curl` or FastAPI `/docs`)
+- [ ] `POST /sim-swap/trigger` + `POST /session/feature` (scenario_1 snapshot 5) = CRITICAL
+- [ ] `POST /scenarios/3/run` returns score progression ending ≤ 20
+- [ ] `GET /features/inspect/{session_id}` returns 47 rows for a scenario_1 session
+- [ ] Twilio SMS arrives on DEMO_ALERT_NUMBER
 
 ---
 
-## 6. PHASE 4 — FRONTEND (Hours 16–28)
+## 6. PHASE 4 — FRONTEND 1: MOBILE BANKING APP (Hours 16–22)
 
-**Entry condition:** All backend routes tested and passing.
+**Entry condition:** Phase 3 done-check passed.
 
-### 6.1 Behavior SDK (`useBehaviorSDK.ts`)
+### 6.1 PhoneFrame.tsx
 
-Capture these real browser events during any active banking app session:
+```tsx
+// Wrapper component — renders children inside a CSS phone device frame
+// Frame: 375px wide, rounded corners, notch, home indicator
+// Background of page: dark gradient so the phone "pops"
+// On desktop at 1440px: phone is centered, surrounded by dark space
+// This makes judges instantly read "this is a mobile app"
+```
+
+### 6.2 Screen flow
+
+```
+Login.tsx
+  - username field, password field, Login button
+  - useBehaviorSDK captures: keydown/keyup (inter_key_delay, dwell_time), error_rate
+  - On submit: POST /session/start {session_type: "legitimate"}
+
+Dashboard.tsx
+  - Balance: ₹3,42,580 (hardcoded)
+  - Buttons: Transfer, History, Profile
+  - useBehaviorSDK captures: scroll, click timing, time_on_screen
+  - ShieldBadge: pulsing green "Protected" in top-right
+
+Transfer.tsx
+  - Beneficiary input, Amount input, Send Money button
+  - useBehaviorSDK captures: form_field_order, direct_to_transfer=0 (came via dashboard)
+  - On submit: triggers OTP flow
+
+OTPScreen.tsx
+  - 6-digit OTP input, 30s countdown timer
+  - useBehaviorSDK captures: time_to_submit_otp_ms (START: OTP screen renders, END: submit click)
+  - On submit: POST /session/feature with final snapshot
+
+FreezeModal.tsx (conditional — shown when action == BLOCK_AND_FREEZE)
+  - Full-screen red overlay (#EF4444 with 95% opacity)
+  - Large lock icon (lucide-react)
+  - "Transaction Frozen"
+  - "Suspicious activity detected. We've sent you an alert."
+  - "Call 1800-XXX-XXXX to verify your identity."
+  - NOT dismissable — forces user action
+```
+
+### 6.3 ShieldBadge.tsx
+
+```tsx
+// Props: status: "active" | "warning" | "blocked"
+// active: pulsing green dot + "Protected" text
+// warning: pulsing amber dot + "Checking..."
+// blocked: solid red + "Frozen"
+// Position: fixed top-right, z-index 50
+// Transitions smoothly between states via Framer Motion
+```
+
+### 6.4 useBehaviorSDK.ts
 
 ```typescript
-// Attach event listeners on mount, detach on unmount
-window.addEventListener('keydown', onKeyDown)      // inter-key delay, dwell start
-window.addEventListener('keyup', onKeyUp)          // dwell end
-window.addEventListener('mousemove', onMouseMove)  // movement entropy (desktop sim)
-window.addEventListener('click', onClick)          // click speed
-window.addEventListener('touchstart', onTouch)     // touch dynamics (if on mobile)
+// Lifecycle:
+// 1. Attach event listeners on session start
+// 2. Accumulate events in memory (never written to storage)
+// 3. Every 6 seconds: extract partial feature vector → POST /session/feature
+// 4. Receive score response → update ShieldBadge status + trigger FreezeModal if needed
+// 5. Detach listeners on session end
 
-// Every 6 seconds, extract partial feature vector from accumulated events
-// POST to /session/feature
-// Update score display
+// For attacker sessions: pre-seeded feature snapshots from scenario files
+// play back automatically every 6 seconds — no manual interaction needed
+
+// Events to capture:
+const onKeyDown = (e) => { /* record {key, timestamp} to buffer */ }
+const onKeyUp   = (e) => { /* compute dwell_time for last key */ }
+const onClick   = (e) => { /* record click timestamp for click_speed */ }
+const onScroll  = (e) => { /* record scroll events for navigation signals */ }
+
+// Feature extraction runs in useEffect cleanup at 6s intervals
+// Raw events: discarded after extraction (privacy by construction)
 ```
-
-The SDK runs during the demo's legitimate sessions (when the judge interacts with the mock bank UI). For the attacker simulation, the attacker's pre-seeded feature snapshots are sent automatically.
-
-### 6.2 Mock Banking App (`BankingApp.tsx`)
-
-Build a convincing but minimal bank UI with these screens:
-
-```
-Screen 1: Login — username/password fields + "Login" button
-Screen 2: Dashboard — account balance (₹3,42,580), last 5 transactions, nav to Transfer
-Screen 3: Transfer — beneficiary input, amount, "Send Money" button
-Screen 4: OTP Verification — 6-digit OTP input + countdown timer
-Screen 5: [Conditional] Freeze Modal — transaction blocked, alert sent, re-auth required
-```
-
-Style: dark navy + gold accent. Professional banking aesthetic. Use Tailwind. Show a small "BehaviorShield Active" indicator badge in the top-right corner with a pulsing green dot.
-
-### 6.3 Score Dashboard (`ScoreDashboard.tsx`)
-
-This is the centerpiece of the demo — judges will watch this:
-
-```
-Layout (side-by-side with BankingApp):
-┌─────────────────────────────────────────┐
-│  CONFIDENCE SCORE                       │
-│                                         │
-│         [Large animated number]         │
-│              91 → 27                    │
-│                                         │
-│  [Recharts LineChart — live score       │
-│   updating every 6 seconds]             │
-│                                         │
-│  RISK LEVEL: ██ CRITICAL                │
-│  ACTION:     🔒 BLOCK + FREEZE          │
-│                                         │
-│  TOP ANOMALIES:                         │
-│  ⚠ Typing delay +80% above baseline    │
-│  ⚠ Navigation: went straight to xfer   │
-│  ⚠ New device fingerprint detected     │
-│  ⚠ SIM swap event — 6 minutes ago      │
-│                                         │
-│  [SIM SWAP ACTIVE badge — red pulse]    │
-└─────────────────────────────────────────┘
-```
-
-Score number animates via Framer Motion (spring animation between values). LineChart shows full session history. Anomaly list fades in as each new anomaly is detected. Risk level badge changes color: green (LOW) → yellow (MEDIUM) → orange (HIGH) → red (CRITICAL).
-
-### 6.4 Attack Simulator (`AttackSimulator.tsx`)
-
-A control panel for the demo operator (the presenter):
-
-```
-Buttons (execute in order during demo):
-[1. Enroll Legitimate User]    → POST /enroll/1 → shows enrollment progress
-[2. Start Legitimate Session]  → POST /session/start {type: legitimate} → SDK active
-[3. TRIGGER SIM SWAP ⚡]       → POST /sim-swap/trigger → red event fires
-[4. Start Attacker Session]    → POST /session/start {type: attacker} → score degrades
-[5. Reset Demo]                → clears all state, ready for next run
-
-Each button is disabled until the previous step completes.
-Show step status: ✓ Enrolled | ✓ Baseline: 91 | ⚡ SIM Swap Active | 🔒 BLOCKED
-```
-
-### 6.5 Rule-Based Comparison Panel
-
-A second tab labeled "Legacy System (Current Indian Banks)":
-
-- Same attacker session runs
-- Rule-based engine checks: amount > ₹50,000? No (demo uses ₹15,000). Time > 11PM? No. Location anomaly? No (no location data)
-- Shows: "✓ Transaction Approved — ₹15,000 sent"
-- Then flip back to BehaviorShield tab showing the CRITICAL block
-
-This comparison is the demo's most powerful moment.
 
 **Done-check Phase 4:**
-- [ ] Score chart animates 91→27 across 5 snapshots during attacker session
-- [ ] All 4 anomaly strings appear with correct timing
-- [ ] Transaction freeze modal appears at score < 30
-- [ ] Rule-based comparison tab shows "Transaction Approved" for same attacker session
-- [ ] Twilio SMS fires and is confirmed received on demo phone
+- [ ] Full login → dashboard → transfer → OTP flow works without errors
+- [ ] ShieldBadge visible on all screens, transitions correctly
+- [ ] Real browser events captured and POSTed to /session/feature
+- [ ] FreezeModal appears when backend returns BLOCK_AND_FREEZE
+- [ ] App renders correctly in 375px viewport inside phone frame
 
 ---
 
-## 7. PHASE 5 — SEED RUNNER & DEMO AUTOMATION (Hours 28–34)
+## 7. PHASE 5 — FRONTEND 2: ANALYST DASHBOARD (Hours 22–30)
 
-**Entry condition:** Full frontend + backend working end-to-end manually.
+**Entry condition:** Phase 4 done-check passed.
 
-### 7.1 One-command demo reset
+### 7.1 Layout structure
 
-`demo/seed_runner.py`:
+```tsx
+// Root: full viewport width, dark background #0F172A
+// 3-column grid: 280px | 1fr | 320px
+// Bottom section: full width (anomaly list + session timeline)
 
-```python
-# Steps (in order):
-# 1. Drop and recreate all DB tables
-# 2. Create user_id=1 (name="Atharva Kumar", enrolled_at=30 days ago)
-# 3. Generate and insert 10 legitimate sessions (seed_legitimate.py)
-# 4. Generate and insert 1 attacker session (seed_attacker.py)
-# 5. Train and save One-Class SVM model for user_id=1
-# 6. Print: "✓ Seeded 10 legitimate sessions | Model trained | Attacker session ready"
-# 7. Print: "Run: uvicorn backend.main:app --reload"
-
-# Usage: python demo/seed_runner.py
-# Must complete in under 10 seconds
+<div className="grid grid-cols-[280px_1fr_320px] gap-4 h-screen p-4">
+  <UserProfile />
+  <ScorePanel />
+  <AlertFeed />
+</div>
+<div className="w-full mt-4">
+  <AnomalyList />
+  <SessionTimeline />
+</div>
 ```
 
-### 7.2 Backup demo mode
+### 7.2 ScorePanel.tsx (centerpiece)
 
-Add `?demo=auto` URL param to frontend. In auto mode:
-- All 5 attacker snapshots play back on a 6-second timer automatically
-- No manual clicking required
-- Presenter just narrates
+```tsx
+// Large animated score number — Framer Motion spring animation
+// animate={{ scale: [1.2, 1] }} on each value change
+// Color: green (#22C55E) above 70, amber (#F59E0B) at 45–70, red (#EF4444) below 45
 
-### 7.3 Metrics screen
+// Recharts LineChart:
+// - data: [{time_s: 0, score: 91}, {time_s: 6, score: 74}, ...]
+// - X-axis: seconds elapsed, Y-axis: 0–100
+// - ReferenceLine at y=45 (dashed, label="Step-Up") and y=30 (dashed, label="Block")
+// - Line color interpolated: green → amber → red
+// - AnimatedLine: strokeDasharray trick for drawing animation
+// - Updates via useScoreStream (polls /score/{session_id} every 2s)
 
-Add a `/metrics` route to the frontend showing:
+// Risk badge below chart:
+// LOW: green | MEDIUM: amber | HIGH: orange | CRITICAL: red (pulsing)
 
-| Metric | Value |
-|---|---|
-| Sessions analyzed (seeded) | 50 |
-| True positives (attack detected) | 47 |
-| False positives (legit flagged) | 1 |
-| Detection rate | 94% |
-| False positive rate | 2.1% |
-| Mean detection latency | 28 seconds |
-| Enrollment sessions required | 10 |
-| Feature dimensions | 47 |
-| SDK CPU overhead | < 1% |
-| SDK memory footprint | < 4 MB |
+// Action badge:
+// ALLOW: "✅ Allowed" | STEP_UP: "🔐 Step-Up Auth" |
+// BLOCK: "🚫 Blocked" | BLOCK_AND_FREEZE: "🔒 Freeze Active"
+```
 
-These are from the spec — display them as a clean stats grid, not a table.
+### 7.3 AnomalyList.tsx
+
+```tsx
+// Each anomaly fades in separately — NOT all at once
+// Use Framer Motion AnimatePresence + staggered children
+// Anomaly card: amber/red left border, icon, text, z-score badge
+// Cards accumulate as session progresses — earlier ones stay visible
+// Always shows max 4 most recent anomalies (matches top_anomalies from API)
+```
+
+### 7.4 SessionTimeline.tsx
+
+```tsx
+// Horizontal timeline — each snapshot is a clickable node
+// Node color: green → amber → red as score degrades
+// Connecting line: gradient left-to-right matching score progression
+// On node click: show a popover with that snapshot's top_anomalies
+// Final node (BLOCKED): lock icon, red, pulsing
+//
+// Timeline data structure:
+// [{time_s: 0, score: 91, label: "Login"},
+//  {time_s: 6, score: 74, label: "Typing"},
+//  {time_s: 12, score: 58, label: "Navigation"},
+//  {time_s: 18, score: 44, label: "Device"},
+//  {time_s: 24, score: 27, label: "SIM Fused", blocked: true}]
+```
+
+### 7.5 useScoreStream.ts
+
+```typescript
+// Poll GET /score/{session_id} every 2000ms during active session
+// On each response: update ScorePanel, AlertFeed, AnomalyList
+// On action === "BLOCK_AND_FREEZE": stop polling, freeze all panels in final state
+// On session end: stop polling
+```
 
 **Done-check Phase 5:**
-- [ ] `python demo/seed_runner.py` completes in < 10 seconds, clean DB
-- [ ] `?demo=auto` runs full attack simulation without any clicks
-- [ ] Metrics page renders correctly
+- [ ] Score animates from 91 to 27 across 5 snapshots when scenario_1 runs
+- [ ] Each anomaly fades in at the correct snapshot (not all at once)
+- [ ] LineChart reference lines visible at 45 and 30
+- [ ] SessionTimeline nodes clickable with correct popover data
+- [ ] All 4 risk levels display with correct colors
 
 ---
 
-## 8. PHASE 6 — TESTING & THRESHOLD TUNING (Hours 34–42)
+## 8. PHASE 6 — FRONTEND 3: ATTACK SIMULATOR (Hours 30–40)
 
-### 8.1 Validate model calibration
+**Entry condition:** Phase 5 done-check passed.
 
-Run this and confirm all assertions pass:
+### 8.1 Scenario data files
+
+Each file in `src/apps/AttackSimulator/scenarios/` exports:
+
+```typescript
+// scenario1.ts
+export const scenario1 = {
+  id: 1,
+  name: "New Phone + SIM",
+  description: "SIM swap + attacker uses own device",
+  attackerType: "Human attacker, new phone",
+  expectedScore: 27,
+  expectedAction: "BLOCK_AND_FREEZE",
+  expectedDetectionTime: 28,
+  detectionStrength: "strong",
+  // 5 feature snapshots for progressive reveal
+  snapshots: [
+    { index: 1, features: { inter_key_delay_mean: 180, ... } },  // starts normal
+    { index: 2, features: { inter_key_delay_mean: 280, ... } },  // typing drift
+    { index: 3, features: { direct_to_transfer: 1, ... } },      // nav anomaly
+    { index: 4, features: { is_new_device: 1, ... } },           // device mismatch
+    { index: 5, features: { device_fingerprint_delta: 0.94, ... } }, // full attacker
+  ],
+  scoreProgression: [91, 74, 58, 44, 27],
+  anomalySequence: [
+    "Login snapshot — baseline match",
+    "Typing inter-key delay +72% above baseline",
+    "Navigation: went directly to transfer — atypical",
+    "Device fingerprint: never seen for this account",
+    "SIM swap event detected 6 minutes ago",
+  ],
+}
+```
+
+Create all 7 files (6 scenarios + legitimate control) following this structure.
+
+### 8.2 ScenarioSelector.tsx
+
+```tsx
+// 7 scenario cards in a vertical list
+// Each card: scenario name, description, expected result badge
+// Active scenario: highlighted border
+// Clicking a card: loads scenario data, resets step controls
+// Scenario 4: show "⚠️ Moderate Detection" badge to set expectations honestly
+// Legitimate control: show "✅ Control — Should ALLOW" badge
+```
+
+### 8.3 StepControls.tsx
+
+```tsx
+// Buttons must fire in order — each disabled until previous completes
+// State machine: IDLE → ENROLLING → ENROLLED → BASELINE → SIM_SWAPPED →
+//                ATTACKING → COMPLETE
+//
+// Step 1: [Enroll User]
+//   → POST /enroll/1 → show enrollment progress (sessions 1→10 counting up)
+//   → On complete: show "✅ Enrolled | Baseline: 91"
+//
+// Step 2: [Establish Baseline]  (auto-completes after enroll if already done)
+//   → Show "✅ Score: 91 | 10 sessions"
+//
+// Step 3: [⚡ Trigger SIM Swap]
+//   → POST /sim-swap/trigger {user_id: 1}
+//   → Banner: "⚡ SIM SWAP ACTIVE — 0:00 elapsed" (live counter)
+//   → Button turns red after firing
+//
+// Step 4: [▶ Run Attack Session]
+//   → POST /session/start {session_type: "scenario_N"}
+//   → Begin replaying snapshots every 6s
+//   → Progress indicator: "Snapshot 1/5... 2/5... 3/5..."
+//
+// Step 5: [📊 Show Legacy Comparison]
+//   → Reveals LegacyContrast panel
+//   → Runs same scenario through rule-based engine (client-side mock)
+//   → Shows "Transaction Approved ❌"
+//
+// [Reset All] button: clears all state, POST /sim-swap/clear, ready for next scenario
+```
+
+### 8.4 ComparisonTable.tsx
+
+```tsx
+// Table builds row by row as each scenario is run — NOT pre-filled
+// Each row fades in via Framer Motion when scenario completes
+//
+// Columns: Scenario | Score | Detected | Time | Result
+//
+// Results use color:
+// BLOCKED → red badge | STEP-UP → amber badge | ALLOWED → green badge
+//
+// Last row always: "Legacy Rule-Based | N/A | ❌ | N/A | APPROVED ❌"
+// This row is pre-filled and always visible — contrast is immediate
+```
+
+### 8.5 FeatureInspector.tsx
+
+```tsx
+// 47-row table showing feature comparison for active session
+// Columns: Feature Name | User Baseline | This Session | Z-Score | Flag
+//
+// Row highlight logic:
+// |z_score| > 3.0 → red background (#EF444420)
+// |z_score| > 2.0 → amber background (#F59E0B20)
+// else → default
+//
+// Z-score column: show colored badge (red for flagged, green for normal)
+// Populates from GET /features/inspect/{session_id}
+// Shows only the 10 most anomalous features by default
+// "Show all 47" toggle expands to full table
+```
+
+### 8.6 LegacyContrast.tsx
+
+```tsx
+// Panel shows what a rule-based system does with the SAME session
+// Rules (hardcoded client-side mock):
+//   - Amount > ₹50,000? → No (demo uses ₹15,000) → PASS
+//   - Time > 11PM? → Yes (2AM) → but single flag insufficient → PASS
+//   - Location anomaly? → No (no location data) → PASS
+//   - Velocity > 3 txns/min? → No → PASS
+//   → Result: "✅ Transaction Approved — ₹15,000 sent"
+//
+// Then: "BehaviorShield result: 🔒 BLOCKED at score 27"
+//
+// This panel is the demo's most powerful moment.
+// Show both systems side-by-side for maximum contrast.
+```
+
+**Done-check Phase 6:**
+- [ ] All 6 scenarios runnable from selector without page refresh
+- [ ] Comparison table builds row by row correctly
+- [ ] Feature Inspector shows 47 features with correct z-scores and highlighting
+- [ ] Legacy contrast panel shows "Transaction Approved" for all attack scenarios
+- [ ] Step controls enforce correct order (buttons disabled until previous step done)
+- [ ] Scenario 4 clearly shows STEP-UP, not BLOCK, with honest explanation visible
+
+---
+
+## 9. PHASE 7 — AUTOMATION & POLISH (Hours 40–46)
+
+**Entry condition:** All 6 phases done-checks passed.
+
+### 9.1 Seed runner (`demo/seed_runner.py`)
 
 ```python
-# backend/tests/test_model.py
-def test_legitimate_scores_high():
+# Steps in order:
+# 1. Drop and recreate all DB tables
+# 2. Create user_id=1 (name="Demo User", enrolled_at=30 days ago)
+# 3. Generate 10 legitimate sessions (seed_legitimate.py)
+# 4. Generate all 6 scenario sessions (seed_scenarios.py)
+# 5. Train and save One-Class SVM model for user_id=1
+# 6. Register 3 known devices for user_id=1 in device_registry
+# 7. Verify: all 6 scenario predictions within target score ranges
+# 8. Print summary table:
+#    ✓ 10 legitimate sessions seeded
+#    ✓ 6 attack scenarios seeded
+#    ✓ Model trained (baseline: {score})
+#    ✓ Scenario checks: [1:27✓] [2:31✓] [3:19✓] [4:48✓] [5:22✓] [6:N/A✓]
+#    ✓ Ready. Run: uvicorn backend.main:app --reload
+#
+# Must complete in < 15 seconds
+# Usage: python demo/seed_runner.py
+```
+
+### 9.2 Auto-demo mode
+
+Add `?demo=auto` URL parameter to Frontend 3:
+
+```typescript
+// In useSimulator.ts:
+// If URLSearchParams has demo=auto:
+//   1. Auto-select scenario 1
+//   2. Auto-run all 5 steps with 3-second delays between each
+//   3. After completion: auto-switch to scenario 3 (bot — most dramatic)
+//   4. Repeat
+// Allows presenter to just narrate without clicking
+```
+
+### 9.3 Metrics screen
+
+Add route `/metrics` to frontend:
+
+```tsx
+// Stats grid — 4 columns, large numbers
+// Data:
+// Detection Rate:        94%
+// False Positive Rate:   2.1%
+// Avg Detection Time:    28s
+// Bot Detection Time:    12s
+// Feature Dimensions:    47
+// Enrollment Sessions:   10
+// SDK Memory:            < 4 MB
+// SDK CPU Overhead:      < 1%
+// Annual Fraud (India):  ₹500 Crore
+// TAM:                   ₹24,000 Crore
+// Business Model:        ₹3/account/month
+// Fake Aadhaar Cost:     ₹500
+```
+
+**Done-check Phase 7:**
+- [ ] `python demo/seed_runner.py` completes in < 15 seconds with clean output
+- [ ] `?demo=auto` runs full scenario 1 without clicks
+- [ ] Metrics screen renders with correct data
+- [ ] Full demo run (all 6 scenarios) completes in under 8 minutes
+
+---
+
+## 10. PHASE 8 — TESTING (Hours 46–48)
+
+### 10.1 Model tests (`backend/tests/test_model.py`)
+
+```python
+def test_legitimate_sessions_score_high():
     for session in get_legitimate_sessions(user_id=1):
-        score = predict(user_id=1, features=session.feature_vector)
-        assert score >= 80, f"Legitimate session scored {score} — too low"
+        score = predict(1, session.feature_vector)
+        assert score >= 80, f"Legitimate session scored {score}"
 
-def test_attacker_scores_low():
-    score = predict(user_id=1, features=get_attacker_session().feature_vector)
-    assert score <= 35, f"Attacker session scored {score} — not detected"
+def test_scenario_1_blocked():
+    score = predict(1, get_scenario_session(1).feature_vector)
+    assert score <= 30
 
-def test_sim_swap_fusion_critical():
+def test_scenario_3_blocked_fastest():
+    score = predict(1, get_scenario_session(3).feature_vector)
+    assert score <= 20
+
+def test_scenario_4_step_up_not_block():
+    score = predict(1, get_scenario_session(4).feature_vector)
+    assert 40 <= score <= 55, f"Scenario 4 scored {score} — expected step-up range"
+
+def test_sim_swap_fusion():
     result = fuse_score(behavior_score=40, sim_swap_active=True)
     assert result["risk_level"] == "CRITICAL"
     assert result["action"] == "BLOCK_AND_FREEZE"
 
 def test_anomaly_count():
-    anomalies = get_top_anomalies(attacker_vector, baseline_mean, baseline_std)
+    anomalies = get_top_anomalies(scenario_1_vector, baseline_mean, baseline_std, True)
     assert len(anomalies) == 4
 
-def test_score_degradation_sequence():
-    scores = simulate_progressive_reveal(attacker_session, n_snapshots=5)
-    assert scores[0] > 80      # starts high
-    assert scores[-1] < 30     # ends critical
-    for i in range(1, 5):
-        assert scores[i] < scores[i-1]  # monotonically decreasing
+def test_fleet_anomaly_fires_on_second_account():
+    check_fleet_anomaly("ATTACKER_DEVICE_ABC123", user_id=1)  # first — no anomaly
+    result = check_fleet_anomaly("ATTACKER_DEVICE_ABC123", user_id=2)  # second — anomaly
+    assert result["fleet_anomaly"] == True
 ```
 
-### 8.2 False positive budget
+### 10.2 False positive budget
 
-Run 50 additional legitimate sessions through the trained model. Confirm ≤ 3 are flagged as HIGH or above (false positive rate ≤ 6% for demo purposes; spec target is 2.1%).
+```python
+# Generate 50 additional legitimate sessions
+# Run each through predict()
+# Assert: at most 3 score below 45 (false positive rate ≤ 6%)
+# If rate > 6%: increase nu from 0.05 to 0.08 and retrain
+```
 
-If false positive rate > 6%, increase `nu` from 0.05 to 0.08 and retrain.
-
-### 8.3 API latency check
+### 10.3 API latency
 
 ```bash
-# All inference endpoints must respond in under 100ms
-curl -w "%{time_total}" -o /dev/null http://localhost:8000/score/test-session-id
+# All inference endpoints must respond in < 100ms
+curl -w "Time: %{time_total}s\n" -o /dev/null \
+  -X POST http://localhost:8000/session/feature \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "test", "feature_snapshot": {}, "snapshot_index": 1}'
 # Target: < 0.1s
 ```
 
-**Done-check Phase 6:**
-- [ ] All 5 test functions pass
+**Done-check Phase 8:**
+- [ ] All 7 test functions pass
 - [ ] False positive rate ≤ 6% on 50 synthetic legitimate sessions
-- [ ] Score endpoint responds in < 100ms
+- [ ] /session/feature responds in < 100ms
+- [ ] Full demo run without errors, all 6 scenarios produce expected outcomes
 
 ---
 
-## 9. DEMO SCRIPT (8 Minutes)
+## 11. CONSTRAINTS (NON-NEGOTIABLE)
 
-Follow this exactly during the hackathon presentation:
-
-### Minute 0:00–1:00 — Problem Setup
-
-**Say:** "India loses ₹500 crore a year to SIM swap fraud. Here's how it works."
-
-**Show:** The attack lifecycle table from the spec on a slide.
-
-**Say:** "A ₹500 fake Aadhaar. A visit to a franchisee store. 4 minutes. Your account is empty. Every Indian bank detects this never — they rely on OTP, and the attacker has your OTP."
-
-### Minute 1:00–2:30 — Enrollment
-
-**Action:** Click `[1. Enroll Legitimate User]`
-
-**Say:** "BehaviorShield first learns what the legitimate user looks like — not what they know or what they have, but how they behave. 10 sessions. Typing rhythm. Swipe patterns. Navigation habits. Device motion."
-
-**Show:** Enrollment panel filling up session by session. Score stabilizes at 91.
-
-**Say:** "This is the user's behavioral fingerprint. It cannot be stolen. It cannot be printed on a fake ID."
-
-### Minute 2:30–4:30 — The Attack
-
-**Action:** Click `[2. Start Legitimate Session]`, let it run 10 seconds. Then click `[3. TRIGGER SIM SWAP ⚡]`. Then click `[4. Start Attacker Session]`.
-
-**Say:** "SIM swap just happened. The fraudster has the victim's phone number. OTP will now go to them. They open the bank app on their device."
-
-**Show:** Score dropping live: 91 → 74 → 58 → 44 → 27. Narrate each drop.
-
-- 91→74: "Typing patterns don't match. Inter-key delay is 80% higher."
-- 74→58: "Navigation is exploratory — went straight to the transfer screen. Legitimate users almost never do this."
-- 58→44: "Device fingerprint: never seen this phone before."
-- 44→27: "SIM swap event from 6 minutes ago fused in. Score collapses."
-
-### Minute 4:30–5:00 — The Intervention
-
-**Show:** Transaction freeze modal. Twilio SMS arrives on phone (hold phone up to camera).
-
-**Say:** "Score 27. SIM swap flag active. Transaction frozen in 28 seconds. SMS sent to the real user. No money moved."
-
-### Minute 5:00–5:45 — Explainability
-
-**Show:** The `top_anomalies` JSON in the dashboard.
-
-**Say:** "This is not a black box. The bank's fraud analyst sees exactly why we blocked it. This is auditable. This is what RBI's 2023 circular is asking for."
-
-### Minute 5:45–6:30 — The Comparison
-
-**Action:** Switch to "Legacy System" tab. Run same attacker session.
-
-**Show:** "✓ Transaction Approved — ₹15,000 sent"
-
-**Say:** "This is what every Indian bank has today. Rule-based. Amount under threshold. Time of day OK. Location unchanged. Approved. Money gone."
-
-**Action:** Switch back to BehaviorShield. Show "🔒 BLOCKED."
-
-**Say:** "That is the gap we fill."
-
-### Minute 6:30–8:00 — Metrics + Business Case
-
-**Show:** Metrics screen.
-
-**Say:** "94% detection rate. 2.1% false positives — less than BioCatch, the global benchmark. 28-second detection window. ₹3 per account per month SaaS. 800 million addressable accounts in India. RBI is mandating exactly this. No Indian company has built it. This is the gap."
+1. No hardware required — fully laptop-demonstrable
+2. No external ML APIs — all inference runs locally
+3. SQLite only — no Docker, no PostgreSQL
+4. Twilio is the only external service — set up account before hackathon
+5. Record a backup demo video before presentation — if anything fails, play the recording
+6. Python 3.11+, Node 20+
+7. All 3 frontends run from a single `npm run dev` command (React Router handles routes)
+8. `python demo/seed_runner.py` must be the only setup step needed before demo
 
 ---
 
-## 10. ANTICIPATED JUDGE QUESTIONS — ANSWERS
-
-Prepare these responses cold:
-
-**"Won't a sophisticated attacker just mimic behavioral patterns?"**
-To mimic behavioral biometrics in real time, an attacker needs months of captured session recordings and live ML inference running on their device during the attack. That raises the attack cost from ₹500 (fake Aadhaar) to hundreds of thousands of rupees and months of preparation. SIM swap is a volume crime — it works because it's cheap. We make it economically unviable, not theoretically impossible.
-
-**"What about false positives — you're blocking legitimate users."**
-False positive rate in simulation: 2.1%. At MEDIUM risk (score 45–70), we step up to OTP — not a hard block. Users are already habituated to OTP. Only at CRITICAL (score < 30 + SIM swap flag) do we hard block, and we immediately notify the user. A legitimate user at score 50 gets one extra OTP prompt. That is the full cost of a false positive.
-
-**"Why haven't banks built this?"**
-Banks' ML infrastructure runs 3–5 years behind. Core banking integration (Finacle, BankFlex) is genuinely painful. Banks are reactive on fraud — they investigate after loss, not before. This is exactly why the SDK model exists: we integrate once, the bank deploys with 2 API calls.
-
-**"Is capturing behavioral data legal in India?"**
-DPDPA 2023 Section 6 explicitly permits behavioral analytics under legitimate purpose for fraud prevention. We store 47 derived floating-point features — not raw keystrokes, not biometric data. Given only the feature vector, it is computationally infeasible to reconstruct the original inputs. Users consent via the bank's existing terms of service, which already covers fraud monitoring.
-
-**"What's the performance impact on the user's phone?"**
-Under 1% additional CPU. Under 0.5% additional battery. Under 4 MB memory. Less overhead than Firebase Analytics, which banks already embed. Event listeners are low-frequency callbacks; feature extraction runs in a background thread in under 5ms.
-
----
-
-## 11. KEY NUMBERS — MEMORIZE THESE
-
-| Stat | Figure |
-|---|---|
-| Annual India SIM swap fraud | ₹500 Crore |
-| Fake Aadhaar cost | ₹500 |
-| Attack window | 4 minutes |
-| BehaviorShield detection time | 28 seconds |
-| Detection rate | 94% |
-| False positive rate | 2.1% |
-| Feature dimensions | 47 |
-| SDK memory footprint | < 4 MB |
-| SDK CPU overhead | < 1% |
-| Enrollment sessions | 10 (or 3–5 with transfer learning) |
-| Business model | ₹3/account/month SaaS |
-| TAM | ₹24,000 Crore/year |
-| RBI fraud loss growth YoY | 708% |
-| Indian bank fraud recovery cost | ₹950 Crore/year |
-
----
-
-## 12. IMPLEMENTATION CONSTRAINTS
-
-- **No hardware required.** All behavioral signals in the demo are either captured from real browser events (legitimate session) or synthesized from seeded distributions (attacker session).
-- **No external ML APIs.** Model runs locally. No OpenAI/Anthropic calls in the ML pipeline.
-- **SQLite only.** No Docker, no PostgreSQL setup required for demo. Keep it runnable in 2 commands.
-- **Twilio is the only external service.** It actually sends the SMS. Have the account set up before the hackathon starts.
-- **Record a backup demo video.** If internet is down or Twilio fails, play the recording. `demo/backup_video.md` has instructions.
-- **Demo must run on a single laptop** with `uvicorn` + `vite dev` as the only running processes.
-- **Python 3.11+, Node 20+.** Do not use deprecated APIs.
-
----
-
-## 13. BUILD ORDER SUMMARY
+## 12. BUILD ORDER SUMMARY
 
 ```
-Hour 0–4:   Phase 1 — DB schema + feature schema + seed data
-Hour 4–10:  Phase 2 — One-Class SVM + score fusion + anomaly explanation
-Hour 10–16: Phase 3 — All 8 FastAPI routes + Twilio integration
-Hour 16–28: Phase 4 — React frontend (BankingApp + ScoreDashboard + AttackSimulator)
-Hour 28–34: Phase 5 — Seed runner + auto-demo mode + metrics screen
-Hour 34–42: Phase 6 — Testing + threshold tuning + latency validation
-Hour 42–48: Polish + rehearse demo script + record backup video
-```
+Hours  0– 4:  Phase 1 — DB schema, feature schema, seed all data
+Hours  4–10:  Phase 2 — ML engine (SVM, fusion, explainer, fleet)
+Hours 10–16:  Phase 3 — All 12 FastAPI routes + Twilio
+Hours 16–22:  Phase 4 — Frontend 1: Mobile Banking App
+Hours 22–30:  Phase 5 — Frontend 2: Analyst Dashboard
+Hours 30–40:  Phase 6 — Frontend 3: Attack Simulator
+Hours 40–46:  Phase 7 — Seed runner, auto-demo, metrics screen
+Hours 46–48:  Phase 8 — Tests, threshold tuning, demo rehearsal
 
-Do not skip phases. Do not parallelize phases 1–3 (each depends on the prior).
-Frontend (Phase 4) can begin after Phase 3's routes are defined but not yet fully tested.
+Do not parallelize phases 1–3. Frontend phases (4–6) depend on all backend routes
+being tested and stable. Build Frontend 1 before 2 before 3 — the simulator
+depends on watching the dashboard, which depends on the banking app working.
+```
