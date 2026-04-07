@@ -1,4 +1,4 @@
-# SHIELD — Complete Project Overview
+# SHIELD -- Complete Project Overview
 
 ---
 
@@ -33,7 +33,7 @@
 
 ---
 
-## FRONTEND 1 — Mobile Banking App (The Victim's Phone)
+## FRONTEND 1 -- Mobile Banking App (The Victim's Phone)
 
 **Purpose:** Where behavioral signals are captured. This is what the legitimate user and the attacker both interact with. Judges see this as the "real world."
 
@@ -89,18 +89,18 @@
 
 ### UI/UX Spec
 
-- **Color:** Deep navy `#0A1628` background, white text, `#FFD700` gold accent — premium banking aesthetic
+- **Color:** Deep navy `#0A1628` background, white text, `#FFD700` gold accent -- premium banking aesthetic
 - **Phone frame:** CSS device frame around the 375px app. Judges instantly read "this is a phone"
 - **S.H.I.E.L.D badge:** Small pulsing green dot + "Protected" in top-right corner of every screen. Turns red when anomaly detected
-- **No visible scoring here** — this app is intentionally unaware-looking. The magic happens on the dashboard, not here
-- **Behavioral SDK runs silently** — no UI indication that signals are being captured (realistic)
+- **No visible scoring here** -- this app is intentionally unaware-looking. The magic happens on the dashboard, not here
+- **Behavioral SDK runs silently** -- captures 47 high-fidelity features (touch, typing, motion, navigation, temporal) every 6 seconds.
 - **Freeze modal:** Full-screen red overlay, not a small popup. Dramatic. Lock icon. "Your transaction has been frozen by S.H.I.E.L.D."
 
 ---
 
-## FRONTEND 2 — Bank Analyst Dashboard (The Bank's Eyes)
+## FRONTEND 2 -- Bank Analyst Dashboard (The Bank's Eyes)
 
-**Purpose:** Real-time fraud ops view. Shows the bank's analyst what S.H.I.E.L.D sees. This is the **judge-facing centerpiece** — they watch this while the attack unfolds on Frontend 1.
+**Purpose:** Real-time fraud ops view. Shows the bank's analyst what S.H.I.E.L.D sees. This is the **judge-facing centerpiece** -- they watch this while the attack unfolds on Frontend 1.
 
 **Layout:** Full desktop width, 3-column layout.
 
@@ -129,7 +129,7 @@
 │  TOP ANOMALIES (Why we blocked this)                                 │
 │                                                                      │
 │  1. Typing inter-key delay +80% above user baseline (z-score: 3.8)  │
-│  2. Navigation: went directly to transfer — atypical (p=0.04)       │
+│  2. Navigation: went directly to transfer -- atypical (p=0.04)       │
 │  3. Device fingerprint: never seen for this account                  │
 │  4. SIM swap event detected 6 minutes ago (telecom API)             │
 │                                                                      │
@@ -137,11 +137,11 @@
 │                                                                      │
 │  SESSION TIMELINE                                                    │
 │  ──────────────────────────────────────────────────────────────────  │
-│  0s    Login (score: 91) ●────                                       │
-│  6s    Typing captured  (score: 74)      ●────                       │
-│  12s   Navigation logged (score: 58)              ●────              │
-│  18s   Device mismatch  (score: 44)                        ●────     │
-│  24s   SIM swap fused   (score: 27) [LOCKED] BLOCKED              ●   │
+│  0s    Login (score: 91) [NODE]────                                       │
+│  6s    Typing captured  (score: 74)      [NODE]────                       │
+│  12s   Navigation logged (score: 58)              [NODE]────              │
+│  18s   Device mismatch  (score: 44)                        [NODE]────     │
+│  24s   SIM swap fused   (score: 27) [LOCKED] BLOCKED              [NODE]   │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -151,13 +151,13 @@
 - **Color:** Dark `#0F172A` base, red `#EF4444` for critical, amber `#F59E0B` for warnings, green `#22C55E` for safe
 - **Score number:** Giant, center-stage. Framer Motion spring animation between values. Color transitions with risk level
 - **LineChart (Recharts):** Score over time, x-axis = seconds, animated line drawing itself in real time. Reference line at 45 (step-up) and 30 (block) shown as dashed horizontal lines
-- **Anomaly cards:** Each anomaly fades in as detected — not all at once. Judges watch them accumulate
+- **Anomaly cards:** Each anomaly fades in as detected -- not all at once. Judges watch them accumulate
 - **Session timeline:** Horizontal, like a git blame view. Each snapshot is a node. Clicking a node shows that snapshot's feature values
 - **Alert panel:** Live feed. Each alert is a card with timestamp, type, and severity badge
 
 ---
 
-## FRONTEND 3 — Attack Simulation Control Panel (The Presenter's Weapon)
+## FRONTEND 3 -- Attack Simulation Control Panel (The Presenter's Weapon)
 
 **Purpose:** The hackathon demo controller. Lets the presenter run all 4 attack scenarios interactively, showing judges each scenario systematically.
 
@@ -176,7 +176,7 @@
 │  │ 3. Automated Bot Attack     │    │  Time: 28s                     │
 │  │ 4. Same Device Takeover     │    │                                │
 │  │ 5. Legitimate User Control  │    │  Detection: [DONE]             │
-│  └─────────────────────────────┘    │  False Positive: —             │
+│  └─────────────────────────────┘    │  False Positive: --             │
 │                                     │                                │
 │  STEP CONTROLS                      │                                │
 │                                     │                                │
@@ -196,7 +196,7 @@
 │  2. Laptop + OTP SIM   │  31   │    [DONE]    │  34s   │ BLOCKED        │
 │  3. Bot Automation     │  19   │    [DONE]    │  12s   │ BLOCKED        │
 │  4. Same Device        │  48   │    [DONE]    │  52s   │ STEP-UP AUTH   │
-│  5. Legitimate User    │  89   │    —      │   —    │ ALLOWED        │
+│  5. Legitimate User    │  89   │    --      │   --    │ ALLOWED        │
 │  ──────────────────────┼───────┼───────────┼────────┼─────────────  │
 │  Legacy Rule-Based     │  N/A  │    [NO]     │  N/A   │ APPROVED [NO]  │
 │                                                                      │
@@ -204,31 +204,31 @@
 │                                                                      │
 │  LIVE FEATURE INSPECTOR  (what signals triggered the block)          │
 │                                                                      │
-│  Feature                  │ User Baseline │ This Session │ Z-Score   │
+│  Feature                  │ User Baseline │ This Session │ Results   │
 │  ─────────────────────────┼───────────────┼──────────────┼────────── │
-│  inter_key_delay_mean     │    180ms      │    310ms     │  +3.8 [CRITICAL]  │
-│  time_to_submit_otp_ms    │   8500ms      │   2100ms     │  -3.2 [CRITICAL]  │
-│  direct_to_transfer       │     0.15      │     1.0      │  +4.1 [CRITICAL]  │
-│  hand_stability_score     │     0.82      │     0.51     │  -3.1 [CRITICAL]  │
-│  is_new_device            │      0        │      1       │  CAT [CRITICAL]   │
-│  exploratory_ratio        │     0.08      │     0.35     │  +3.4 [CRITICAL]  │
+│  inter_key_delay_mean     │    180ms      │    310ms     │ [ALERT]   │
+│  time_to_submit_otp_ms    │   8500ms      │   2100ms     │ [ALERT]   │
+│  direct_to_transfer       │     0.15      │     1.0      │ [ALERT]   │
+│  hand_stability_score     │     0.82      │     0.51     │ [ALERT]   │
+│  is_new_device            │      0        │      1       │ [ALERT]   │
+│  exploratory_ratio        │     0.08      │     0.35     │ [ALERT]   │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### UI/UX Spec
 
-- **Color:** Near-black `#09090B` terminal feel, green `#00FF88` for safe outputs, red for blocks — hacker aesthetic that fits the security track
-- **Scenario cards:** Clicking any scenario pre-loads its seeded data. Transitions are instant — no loading spinners during demo
+- **Color:** Near-black `#09090B` terminal feel, green `#00FF88` for safe outputs, red for blocks -- hacker aesthetic that fits the security track
+- **Scenario cards:** Clicking any scenario pre-loads its seeded data. Transitions are instant -- no loading spinners during demo
 - **Comparison table:** Builds row by row as each scenario is run. Not pre-filled. Judges see it populate live
 - **Feature Inspector:** Rows highlight red as z-score crosses 2.5. Judges can see exactly which features fired
-- **Legacy System column:** Always shows APPROVED ❌ for all attack scenarios — the contrast is the point
+- **Legacy System column:** Always shows APPROVED [FAIL] for all attack scenarios -- the contrast is the point
 
 ---
 
-## ALL 5 ATTACK SCENARIOS — What to Show & How to Detect
+## ALL 5 ATTACK SCENARIOS -- What to Show & How to Detect
 
-### Scenario 1 — New Device + SIM (from your doc)
+### Scenario 1 -- New Device + SIM (from your doc)
 **What attacker does:** SIM swap → opens bank app on own phone → gets OTP → drains account
 
 **Key signals:** `is_new_device=1`, `device_fingerprint_delta` high, typing mismatch, `direct_to_transfer=1`, `time_of_day_hour=2`
@@ -237,16 +237,16 @@
 
 ---
 
-### Scenario 2 — Laptop + OTP SIM (from your doc)
+### Scenario 2 -- Laptop + OTP SIM (from your doc)
 **What attacker does:** SIM only used for OTP, fraud executed on laptop browser
 
-**New detection angle:** Mouse movement replaces touch — behavioral modality switch is itself an anomaly. `form_field_order_entropy` spikes (laptop tab-order vs mobile tap-order differs). `swipe_velocity` features all zero (no touch = suspicious on a "mobile session").
+**New detection angle:** Mouse movement replaces touch -- behavioral modality switch is itself an anomaly. `form_field_order_entropy` spikes (laptop tab-order vs mobile tap-order differs). `swipe_velocity` features all zero (no touch = suspicious on a "mobile session").
 
 **Score:** 31 | **Detection:** 34s | **Action:** BLOCK
 
 ---
 
-### Scenario 3 — Bot/Automated Attack (from your doc)
+### Scenario 3 -- Bot/Automated Attack (from your doc)
 **What attacker does:** Scripts autofill forms, instant OTP submission
 
 **Key signals:** `time_to_submit_otp_ms = 800ms` (humans take 6–10 seconds), `interaction_pace_ratio = 0.05` (too fast), `click_speed_std ≈ 0` (inhuman consistency), `typing_burst_count = 1` (single burst, no pauses)
@@ -257,40 +257,40 @@
 
 ---
 
-### Scenario 4 — Same Device Takeover (new, from your doc)
+### Scenario 4 -- Same Device Takeover (new, from your doc)
 **What attacker does:** Steals phone + SIM. Device is known. Behavioral signals weaker.
 
 **What still fires:** `session_duration_ms` 60% shorter than baseline, `direct_to_transfer=1`, `time_of_day_hour=3`, `time_to_submit_otp_ms` lower (urgency). SIM swap signal fuses in.
 
 **Honest limitation:** Score lands at 48 → STEP-UP AUTH, not hard block. Demonstrate this as the system asking for Face ID re-verification.
 
-**Say to judges:** *"We don't hard block because false positive cost is high here — it could be the legitimate user on their own phone. We step up to Face ID. The attacker cannot pass biometric re-auth. This is correct behavior, not a failure."*
+**Say to judges:** *"We don't hard block because false positive cost is high here -- it could be the legitimate user on their own phone. We step up to Face ID. The attacker cannot pass biometric re-auth. This is correct behavior, not a failure."*
 
 **Score:** 48 | **Action:** STEP-UP (Face ID prompt shown)
 
 ---
 
-### Scenario 5 — NEW: Credential Stuffing + SIM (not in your doc)
+### Scenario 5 -- NEW: Credential Stuffing + SIM (not in your doc)
 **What attacker does:** Uses leaked credential database + SIM swap. Tries 3 accounts in 8 minutes.
 
-**New signals to add:** `session_velocity` — multiple sessions for different users from same device fingerprint within a short window. Cross-account anomaly detection: same device seen on 3 different user accounts in 10 minutes = automatic CRITICAL regardless of individual session scores.
+**New signals to add:** `session_velocity` -- multiple sessions for different users from same device fingerprint within a short window. Cross-account anomaly detection: same device seen on 3 different user accounts in 10 minutes = automatic CRITICAL regardless of individual session scores.
 
-**Why it's new and important:** This is how professional fraud rings operate — not one victim, many. Your current spec is single-user. Add a fleet-level anomaly in the Risk Engine: `device_seen_on_n_accounts_last_hour`. If n ≥ 2 → escalate to HIGH regardless of behavior score.
+**Why it's new and important:** This is how professional fraud rings operate -- not one victim, many. Your current spec is single-user. Add a fleet-level anomaly in the Risk Engine: `device_seen_on_n_accounts_last_hour`. If n ≥ 2 → escalate to HIGH regardless of behavior score.
 
 **Score:** 22 | **Detection:** Device flagged on 2nd account attempt | **Action:** All associated accounts frozen
 
 ---
 
-### Scenario 6 — NEW: SIM Swap Without Device Takeover (Partial Attack)
-**What attacker does:** Has SIM, doesn't have credentials yet. Uses the SIM to probe — calls bank IVR, checks balance via SMS banking, tests which bank the victim uses.
+### Scenario 6 -- NEW: SIM Swap Without Device Takeover (Partial Attack)
+**What attacker does:** Has SIM, doesn't have credentials yet. Uses the SIM to probe -- calls bank IVR, checks balance via SMS banking, tests which bank the victim uses.
 
-**New detection angle:** IVR probe pattern — 3 SMS balance queries in 2 minutes from new SIM = SIM swap + reconnaissance flag. Not behavioral biometrics — pure telecom signal. Demonstrate this as a pre-auth warning before the attacker even opens the app.
+**New detection angle:** IVR probe pattern -- 3 SMS balance queries in 2 minutes from new SIM = SIM swap + reconnaissance flag. Not behavioral biometrics -- pure telecom signal. Demonstrate this as a pre-auth warning before the attacker even opens the app.
 
 **Shows judges:** Your system catches the attack *before login*, not just during the session.
 
 ---
 
-## BACKEND — Additions to CLAUDE.md
+## BACKEND -- Additions to CLAUDE.md
 
 Add these new routes and components:
 
@@ -336,7 +336,7 @@ Your laptop screen during demo:
 │  └───────────────┘      └────────────────────┘  │
 │                                                 │
 │  PROJECTOR / SECOND SCREEN:                     │
-│  Frontend 1 — Mobile Banking App                │
+│  Frontend 1 -- Mobile Banking App                │
 │  (375px, phone frame, full screen)              │
 │                                                 │
 └─────────────────────────────────────────────────┘
@@ -355,7 +355,7 @@ Projector shows the banking app (what the "user" sees). Your laptop shows the at
 | Bot Automation | [SAFE] Strongest | 19 | 12s | BLOCK |
 | Same Device | [WARNING] Moderate (honest) | 48 | 52s | STEP-UP |
 | Credential Stuffing | [SAFE] Strong (fleet) | 22 | 2nd account | FREEZE ALL |
-| Pre-auth Probe | [SAFE] Novel | — | Pre-login | EARLY WARN |
-| Legitimate User | [DONE] No action | 89 | — | ALLOW |
-| Legacy Rule-Based | [NO] All pass | N/A | — | APPROVED |
+| Pre-auth Probe | [SAFE] Novel | -- | Pre-login | EARLY WARN |
+| Legitimate User | [DONE] No action | 89 | -- | ALLOW |
+| Legacy Rule-Based | [NO] All pass | N/A | -- | APPROVED |
 

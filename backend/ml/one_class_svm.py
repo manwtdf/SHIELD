@@ -34,8 +34,9 @@ def train_model(user_id: int):
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
         
-        # Train OneClassSVM - Nu=0.01 to be very permissive to legit variance
-        model = OneClassSVM(kernel='rbf', nu=0.01, gamma='scale')
+        # Train OneClassSVM - Nu from env (default 0.01)
+        nu = float(os.getenv("SVM_NU", "0.01"))
+        model = OneClassSVM(kernel='rbf', nu=nu, gamma='scale')
         model.fit(X_scaled)
         
         # Calibration using min-max on decision scores

@@ -122,5 +122,14 @@ SCENARIO_PROFILES = {
             "timezone_changed":         0,
             "os_version_changed":       0,
         }
+    },
+    "scenario_6": {  # Pre-Auth SIM Probe
+        "name": "Attacker: Pre-Auth SIM Probe",
+        "description": "Detection fires before login via telecom/SMS pattern (3 calls in 2 minutes).",
+        "expected_score": 0,
+        "expected_action": "BLOCK_TRANSACTION",
+        "features": {
+             # Pre-auth has no behavioral vector, but we fill with 0s for schema safety
+        }
     }
 }

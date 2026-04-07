@@ -6,9 +6,9 @@
 
 ## WHAT THIS IS
 
-SHIELD is a behavioral biometric fraud detection layer that prevents SIM swap attacks on Indian banking infrastructure. When a fraudster steals your SIM and OTP, they cannot steal how you behave. SHIELD detects the behavioral discontinuity a SIM swap creates — in under 30 seconds — before money moves.
+SHIELD is a behavioral biometric fraud detection layer that prevents SIM swap attacks on Indian banking infrastructure. When a fraudster steals your SIM and OTP, they cannot steal how you behave. SHIELD detects the behavioral discontinuity a SIM swap creates -- in under 30 seconds -- before money moves.
 
-India loses ₹500 Crore/year to SIM swap fraud. Every Indian bank detects this: never. They rely on OTP. SHIELD does not.
+India loses INR 500 Crore/year to SIM swap fraud. Every Indian bank detects this: never. They rely on OTP. SHIELD does not.
 
 ---
 
@@ -185,7 +185,7 @@ behaviourshield/
 ### Infrastructure (demo-only)
 | Component | Technology |
 |---|---|
-| All services | Localhost only — no Docker required |
+| All services | Localhost only -- no Docker required |
 | Frontend port | 5173 |
 | Backend port | 8000 |
 | DB file | backend/behaviourshield.db |
@@ -198,20 +198,20 @@ behaviourshield/
 Create `.env` in project root. All variables required before Phase 3.
 
 ```bash
-# Twilio — get free trial at twilio.com
-# This ACTUALLY SENDS an SMS during the demo — set up before hackathon starts
+# Twilio -- get free trial at twilio.com
+# This ACTUALLY SENDS an SMS during the demo -- set up before hackathon starts
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_FROM_NUMBER=+1xxxxxxxxxx
-DEMO_ALERT_NUMBER=+91xxxxxxxxxx     # your phone number — holds it up during demo
+DEMO_ALERT_NUMBER=+91xxxxxxxxxx     # your phone number -- holds it up during demo
 
 # App
 BACKEND_URL=http://localhost:8000
 FRONTEND_URL=http://localhost:5173
 SECRET_KEY=replace_with_random_32_char_string
 
-# ML thresholds — tunable per bank risk tolerance
-SVM_NU=0.05
+# ML thresholds -- tunable per bank risk tolerance
+SVM_NU=0.01
 SCORE_BLOCK_THRESHOLD=30
 SCORE_STEPUP_THRESHOLD=45
 ENROLLMENT_SESSIONS_REQUIRED=10
@@ -222,7 +222,7 @@ DEMO_MODE=true                      # enables auto-playback mode (?demo=auto)
 
 ---
 
-## FRONTEND 1 — Mobile Banking App
+## FRONTEND 1 -- Mobile Banking App
 
 **Role:** The victim's and attacker's interface. Behavioral signals captured here silently.
 
@@ -241,18 +241,18 @@ Login → Dashboard → Transfer → OTP → [ALLOWED | FREEZE MODAL]
 | Login | inter_key_delay, dwell_time, error_rate, typing_burst_count |
 | Dashboard | time_on_dashboard_ms, scroll behavior, navigation intent |
 | Transfer | form_field_order_entropy, direct_to_transfer, time_on_transfer_ms |
-| OTP | time_to_submit_otp_ms (CRITICAL attacker signal — bot enters in 800ms, human in 8500ms) |
+| OTP | time_to_submit_otp_ms (CRITICAL attacker signal -- bot enters in 800ms, human in 8500ms) |
 
 ### Visual Design
 - Background: `#0A1628` deep navy
 - Accent: `#FFD700` gold
 - BehaviorShield badge: top-right, pulsing green dot, turns red on anomaly
 - Freeze modal: full-screen red overlay, lock icon, "Transaction frozen by BehaviorShield"
-- Behavioral SDK runs invisibly — no UI indication of signal capture (realistic)
+- Behavioral SDK runs invisibly -- no UI indication of signal capture (realistic)
 
-### useBehaviorSDK.ts — what it captures
+### useBehaviorSDK.ts -- what it captures
 ```typescript
-// Real browser events — fires during legitimate session (judge interaction)
+// Real browser events -- fires during legitimate session (judge interaction)
 window.addEventListener('keydown', onKeyDown)       // inter-key delay, dwell start
 window.addEventListener('keyup', onKeyUp)           // dwell end
 window.addEventListener('mousemove', onMouseMove)   // movement entropy (desktop sim)
@@ -265,7 +265,7 @@ window.addEventListener('touchstart', onTouch)      // touch dynamics
 
 ---
 
-## FRONTEND 2 — Bank Analyst Dashboard
+## FRONTEND 2 -- Bank Analyst Dashboard
 
 **Role:** The bank's fraud operations view. Judges watch this while attack unfolds on Frontend 1.
 
@@ -273,11 +273,11 @@ window.addEventListener('touchstart', onTouch)      // touch dynamics
 
 **Layout:** 3-column, full desktop width.
 
-### Column 1 — User Profile
+### Column 1 -- User Profile
 ```
-User: Atharva Kumar
+User: John Kumar
 Account: ****4521
-Risk Level: [badge — color changes live]
+Risk Level: [badge -- color changes live]
 Enrolled: [DONE]
 Sessions: 10
 Baseline Score: 91
@@ -286,12 +286,12 @@ Current Device: [NO] UNKNOWN
 SIM Status: [ACTIVE] SWAP ACTIVE
 ```
 
-### Column 2 — Score Panel (centerpiece)
+### Column 2 -- Score Panel (centerpiece)
 ```
-[Large animated score number — Framer Motion spring]
+[Large animated score number -- Framer Motion spring]
 91 → 74 → 58 → 44 → 27
 
-[Recharts LineChart — live, animates in real time]
+[Recharts LineChart -- live, animates in real time]
 X-axis: seconds elapsed
 Y-axis: 0–100 confidence score
 Reference lines: dashed at 45 (step-up) and 30 (block)
@@ -301,37 +301,37 @@ RISK LEVEL: ■ CRITICAL     (badge, color-coded)
 ACTION: [BLOCK] BLOCK + FREEZE  (badge)
 ```
 
-### Column 3 — Alert Feed
+### Column 3 -- Alert Feed
 ```
 Each alert is a card, fades in as detected:
-[CRITICAL] SIM SWAP ACTIVE — 6 min ago
+[CRITICAL] SIM SWAP ACTIVE -- 6 min ago
 [CRITICAL] New device fingerprint
-[WARNING] Typing anomaly — +80% delay
-[WARNING] Navigation — direct to transfer
+[WARNING] Typing anomaly -- +80% delay
+[WARNING] Navigation -- direct to transfer
 
-[SEND SMS ALERT [RUN]] button — fires Twilio in live demo
+[SEND SMS ALERT [RUN]] button -- fires Twilio in live demo
 ```
 
-### Bottom — Anomaly List + Session Timeline
+### Bottom -- Anomaly List + Session Timeline
 ```
 TOP ANOMALIES (fades in one-by-one as each snapshot fires):
 1. Typing inter-key delay +80% above baseline (z = 3.8)
 2. Navigation: direct to transfer (p = 0.04)
 3. Device fingerprint: never seen for this account
-4. SIM swap event — 6 minutes ago (telecom API)
+4. SIM swap event -- 6 minutes ago (telecom API)
 
 SESSION TIMELINE (horizontal, git-blame style):
-0s  [o]── Login (91)
-6s       [o]── Typing (74)
-12s           [o]── Navigation (58)
-18s                [o]── Device (44)
-24s                     [o]── SIM fused (27) [BLOCK]
+0s  [NODE]── Login (91)
+6s       [NODE]── Typing (74)
+12s           [NODE]── Navigation (58)
+18s                [NODE]── Device (44)
+24s                     [NODE]── SIM fused (27) [BLOCK]
 Click any node → shows that snapshot's feature values
 ```
 
 ---
 
-## FRONTEND 3 — Attack Simulator Control Panel
+## FRONTEND 3 -- Attack Simulator Control Panel
 
 **Role:** Presenter's demo controller. Run all 6 scenarios interactively. Judges see every attack vector tested.
 
@@ -344,14 +344,14 @@ Click any node → shows that snapshot's feature values
 ```
 1. New Phone + SIM (Strong detection)
 2. Laptop + OTP SIM (Device modality switch)
-3. Automated Bot Attack (Fastest detection — 12s)
+3. Automated Bot Attack (Fastest detection -- 12s)
 4. Same Device Takeover (Honest moderate case)
 5. Credential Stuffing + Fleet Anomaly (Multiple accounts)
-6. Legitimate User (Control — should ALLOW)
+6. Legitimate User (Control -- should ALLOW)
 ```
 
 ### Step Controls
-Buttons disable until previous step completes — no wrong-order execution:
+Buttons disable until previous step completes -- no wrong-order execution:
 ```
 [1. Enroll User        [DONE] Done]
 [2. Establish Baseline [DONE] 91 ]
@@ -369,8 +369,8 @@ Scenario              | Score | Detected | Time  | Result
 3. Bot Automation     |  19   |    [DONE]    |  12s  | BLOCKED
 4. Same Device        |  48   |    [DONE]    |  52s  | STEP-UP
 5. Credential Stuff.  |  22   |    [DONE]    |  2nd  | ALL FROZEN
-6. Pre-Auth Probe     |  —    |    [DONE]    |  Pre  | EARLY WARN
-7. Legitimate User    |  89   |    —     |   —   | ALLOWED [DONE]
+6. Pre-Auth Probe     |  --    |    [DONE]    |  Pre  | EARLY WARN
+7. Legitimate User    |  89   |    --     |   --   | ALLOWED [DONE]
 ─────────────────────────────────────────────────────────
 Legacy Rule-Based     |  N/A  |    [NO]    |  N/A  | APPROVED [NO]
 ```
@@ -391,7 +391,7 @@ exploratory_ratio        |  0.08    |  0.35    | +3.4 [CRITICAL]
 
 ---
 
-## BACKEND — ALL API ROUTES
+## BACKEND -- ALL API ROUTES
 
 ### Base URL: `http://localhost:8000`
 
@@ -458,10 +458,10 @@ GET    /features/inspect/{session_id}
 
 ## ML ENGINE
 
-### One-Class SVM (Primary — used in demo)
+### One-Class SVM (Primary -- used in demo)
 ```
 Algorithm:   sklearn.svm.OneClassSVM
-Kernel:      RBF (Gaussian) — non-linear decision boundary
+Kernel:      RBF (Gaussian) -- non-linear decision boundary
 Nu:          0.05 (accepts up to 5% of legitimate sessions as anomalous)
 Input:       47-dimensional feature vector, StandardScaler normalized
 Output:      Raw decision_function score → calibrated to 0–100 via Platt scaling
@@ -493,21 +493,21 @@ Action: all associated accounts → CRITICAL, regardless of individual behavior 
 Detection: fires on 2nd account attempt
 ```
 
-### LSTM Autoencoder (Roadmap variant — show in demo as upgrade path)
+### LSTM Autoencoder (Roadmap variant -- show in demo as upgrade path)
 ```
 Models behavioral signals as time series rather than static feature vector
 Better on navigation graph signal (sequence matters, not just aggregate)
 Input: (session_length, 47) tensor
 Output: reconstruction error → anomaly score
 Training: 10+ sessions, batch size 1, 50 epochs
-Note: computationally heavier — position as production upgrade from SVM baseline
+Note: computationally heavier -- position as production upgrade from SVM baseline
 ```
 
 ---
 
 ## ALL 6 ATTACK SCENARIOS
 
-### Scenario 1 — New Device + SIM (Strongest detection)
+### Scenario 1 -- New Device + SIM (Strongest detection)
 ```
 Attack:   SIM swap → attacker installs bank app on own phone → gets OTP → transfers
 Signals:  is_new_device=1, device_fingerprint_delta HIGH, typing mismatch,
@@ -515,16 +515,16 @@ Signals:  is_new_device=1, device_fingerprint_delta HIGH, typing mismatch,
 Score:    27 | Time: 28s | Action: BLOCK + FREEZE
 ```
 
-### Scenario 2 — Laptop + OTP SIM (Device modality switch)
+### Scenario 2 -- Laptop + OTP SIM (Device modality switch)
 ```
 Attack:   SIM used for OTP only, fraud executed on laptop browser
-Key:      Mouse movement replaces touch — modality switch is itself an anomaly.
+Key:      Mouse movement replaces touch -- modality switch is itself an anomaly.
           swipe_velocity = 0 (no touch on laptop), form_field_order_entropy HIGH
           (laptop tab-order vs mobile tap-order differs), is_new_device=1
 Score:    31 | Time: 34s | Action: BLOCK
 ```
 
-### Scenario 3 — Bot / Automated Attack (Fastest detection)
+### Scenario 3 -- Bot / Automated Attack (Fastest detection)
 ```
 Attack:   Scripts autofill forms, automated OTP submission
 Signals:  time_to_submit_otp_ms = 800ms (human baseline: 8500ms),
@@ -534,22 +534,22 @@ Key:      "Humans are messy. Bots are too perfect. Zero variance IS the anomaly.
 Score:    19 | Time: 12s | Action: BLOCK (fastest of all scenarios)
 ```
 
-### Scenario 4 — Same Device Takeover (Honest moderate case)
+### Scenario 4 -- Same Device Takeover (Honest moderate case)
 ```
 Attack:   Attacker steals both phone and SIM. Device is known to system.
 Signals:  session_duration_ms 60% shorter, direct_to_transfer=1,
           time_of_day_hour=3, time_to_submit_otp_ms lower (urgency)
           SIM swap signal fuses in. Behavioral diff is smaller.
 Score:    48 | Time: 52s | Action: STEP-UP AUTH (Face ID prompt)
-Honest:   "We step up, not hard block — false positive cost is high here.
+Honest:   "We step up, not hard block -- false positive cost is high here.
           The attacker cannot pass biometric re-auth. This is correct behavior."
 ```
 
-### Scenario 5 — Credential Stuffing + Fleet Anomaly
+### Scenario 5 -- Credential Stuffing + Fleet Anomaly
 ```
 Attack:   Professional fraud ring. Leaked credentials + SIM swap.
           Same device tries different accounts in short succession.
-Key:      fleet_anomaly detection — same device_fingerprint on ≥ 2 accounts 
+Key:      fleet_anomaly detection -- same device_fingerprint on ≥ 2 accounts 
           within 60 minutes.
 Score:    22 | Action: ALL ACCOUNTS FROZEN
 ```
@@ -680,7 +680,7 @@ Judges see: the "phone" on the big screen + your laptop showing real-time detect
 |---|---|---|
 | 0:00–1:00 | Show attack lifecycle slide | "500 INR fake Aadhaar. 4 minutes. Account empty. Every Indian bank detects this: never." |
 | 1:00–2:30 | Click Enroll. Show baseline build. Score → 91 | "This is the behavioral fingerprint. Cannot be printed on a fake ID." |
-| 2:30–4:30 | Trigger SIM Swap. Start attacker session. Narrate each score drop | "74 — typing mismatch. 58 — navigation anomaly. 44 — new device. 27 — SIM fused. Blocked." |
+| 2:30–4:30 | Trigger SIM Swap. Start attacker session. Narrate each score drop | "74 -- typing mismatch. 58 -- navigation anomaly. 44 -- new device. 27 -- SIM fused. Blocked." |
 | 4:30–5:00 | Freeze modal. SMS arrives. Hold phone up | "28 seconds. No money moved." |
 | 5:00–5:45 | Show anomaly JSON | "Not a black box. Auditable. RBI can inspect exactly why we blocked it." |
 | 5:45–6:30 | Switch to Legacy tab. Same attacker. "Approved NO" | "This is what every Indian bank has today." |
@@ -689,12 +689,12 @@ Judges see: the "phone" on the big screen + your laptop showing real-time detect
 
 ---
 
-## KEY NUMBERS — MEMORIZE
+## KEY NUMBERS -- MEMORIZE
 
 | Stat | Figure |
 |---|---|
-| Annual SIM swap fraud | ₹500 Crore |
-| Fake Aadhaar cost | ₹500 |
+| Annual SIM swap fraud | INR 500 Crore |
+| Fake Aadhaar cost | INR 500 |
 | Attack window | 4 minutes |
 | Our detection | 28 seconds (Scenario 1) |
 | Bot detection | 12 seconds (Scenario 3) |
@@ -704,8 +704,8 @@ Judges see: the "phone" on the big screen + your laptop showing real-time detect
 | SDK memory | < 4 MB |
 | SDK CPU | < 1% |
 | Enrollment sessions | 10 (3–5 with transfer learning) |
-| Business model | ₹3/account/month SaaS |
-| TAM | ₹24,000 Crore/year |
+| Business model | INR 3/account/month SaaS |
+| TAM | INR 24,000 Crore/year |
 | RBI fraud YoY growth | 708% |
 
 ---
@@ -724,7 +724,7 @@ pip install -r requirements.txt
 
 # 3. Seed all data and train model (run this before every demo)
 python demo/seed_runner.py
-# Expected: "✓ 10 legitimate sessions | ✓ 6 attack scenarios | ✓ Model trained | Ready"
+# Expected: "[DONE] 10 legitimate sessions | [DONE] 6 attack scenarios | [DONE] Model trained | Ready"
 
 # 4. Start backend
 uvicorn main:app --reload --port 8000
@@ -744,16 +744,16 @@ curl http://localhost:8000/scenarios/list
 
 ---
 
-## JUDGE Q&A — SHORT ANSWERS
+## JUDGE Q&A -- SHORT ANSWERS
 
 **"Won't a smart attacker mimic behavioral patterns?"**
-To mimic behavioral biometrics live, they need months of session recordings and real-time ML inference on their device. SIM swap is a ₹500 attack. We raise the cost by orders of magnitude.
+To mimic behavioral biometrics live, they need months of session recordings and real-time ML inference on their device. SIM swap is a INR500 attack. We raise the cost by orders of magnitude.
 
 **"What about false positives?"**
-2.1%. At MEDIUM risk we step up to OTP — not a hard block. Users are habituated to OTP already. Only CRITICAL gets hard blocked. A legitimate user at score 50 sees one extra OTP prompt.
+2.1%. At MEDIUM risk we step up to OTP -- not a hard block. Users are habituated to OTP already. Only CRITICAL gets hard blocked. A legitimate user at score 50 sees one extra OTP prompt.
 
 **"Why haven't banks built this?"**
-Banks' ML infrastructure is 3–5 years behind. Core banking integration is painful. They're reactive, not proactive. This is why the SDK model exists — we integrate, the bank deploys with 2 API calls.
+Banks' ML infrastructure is 3–5 years behind. Core banking integration is painful. They're reactive, not proactive. This is why the SDK model exists -- we integrate, the bank deploys with 2 API calls.
 
 **"Is capturing behavioral data legal?"**
 DPDPA 2023 Section 6: legitimate purpose for fraud prevention. We store 47 derived floats, not raw biometrics. Given the feature vector alone, reconstruction of original inputs is computationally infeasible.

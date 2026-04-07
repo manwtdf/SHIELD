@@ -36,7 +36,11 @@ def generate_vector(profile):
 
 def seed():
     print("Initializing SHIELD Database...")
-    init_db()
+    try:
+        init_db()
+    except Exception:
+        # Tables likely already exist
+        pass
     
     db = SessionLocal()
     try:

@@ -1,4 +1,4 @@
-# SHIELD — Backend Implementation Plan
+# SHIELD -- Backend Implementation Plan
 ## Session-based Heuristic Intelligence for Event Level Defense
 
 > This document is the complete implementation guide for the SHIELD backend.
@@ -15,7 +15,7 @@ backend/
 ├── main.py                    ← FastAPI app entry point
 ├── requirements.txt
 │
-├── routers/                   ← HTTP layer only — no business logic here
+├── routers/                   ← HTTP layer only -- no business logic here
 │   ├── session.py
 │   ├── score.py
 │   ├── enroll.py
@@ -25,7 +25,7 @@ backend/
 │   ├── features.py
 │   └── fleet.py
 │
-├── ml/                        ← All ML logic — no HTTP here
+├── ml/                        ← All ML logic -- no HTTP here
 │   ├── feature_schema.py
 │   ├── one_class_svm.py
 │   ├── lstm_autoencoder.py
@@ -330,7 +330,7 @@ assert len(FEATURE_NAMES) == 47, f"Expected 47 features, got {len(FEATURE_NAMES)
 
 FEATURE_INDEX: dict[str, int] = {name: i for i, name in enumerate(FEATURE_NAMES)}
 
-# Feature groups — used by anomaly_explainer to contextualize z-scores
+# Feature groups -- used by anomaly_explainer to contextualize z-scores
 FEATURE_GROUPS: dict[str, list[str]] = {
     "touch":      FEATURE_NAMES[0:8],
     "typing":     FEATURE_NAMES[8:18],
@@ -364,10 +364,16 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 
 from ml.feature_schema import FEATURE_NAMES, dict_to_vector
+One-Class SVM (Primary for demo)
+Algorithm: sklearn.svm.OneClassSVM
+Nu: 0.01 (1% outlier sensitivity)
+Platt Scaling: Calibrates raw decision function to 0-100 range
+Training: 10 legitimate sessions per user
+Storage: 2 pickle files per user (model.pkl, scaler.pkl)
+Inference: < 1ms on CPU
 
 MODEL_DIR = os.getenv("MODEL_DIR", "models")
 
-# ─────────────────────────────────────────────────────────────
 # INTERNAL HELPERS
 # ─────────────────────────────────────────────────────────────
 
@@ -402,15 +408,15 @@ def train(user_id: int, feature_vectors: list[list[float]]) -> dict:
     Train One-Class SVM on legitimate session feature vectors.
 
     Args:
-        user_id:         int — used for model file naming
+        user_id:         int -- used for model file naming
         feature_vectors: list of 47-float lists, one per legitimate session
 
     Returns:
         {
-            "baseline_mean": float,   — mean score on training data
-            "baseline_std":  float,   — std of scores on training data
+            "baseline_mean": float,   -- mean score on training data
+            "baseline_std":  float,   -- std of scores on training data
             "n_sessions":    int,
-            "per_feature_mean": list[float],  — used by anomaly_explainer
+            "per_feature_mean": list[float],  -- used by anomaly_explainer
             "per_feature_std":  list[float],
         }
     """
@@ -480,7 +486,7 @@ def predict(user_id: int, feature_vector: list[float]) -> int:
         feature_vector: list[float] len=47 (zeros for unrevealed features)
 
     Returns:
-        int — confidence score 0–100
+        int -- confidence score 0–100
         (high = legitimate, low = anomalous/attacker)
 
     Raises:
@@ -589,50 +595,50 @@ from ml.feature_schema import FEATURE_NAMES
 # ─────────────────────────────────────────────────────────────
 TEMPLATES: dict[str, str] = {
     "inter_key_delay_mean":      "Typing speed {direction} {pct}% from user baseline",
-    "inter_key_delay_std":       "Typing rhythm variance {direction} {pct}% — inconsistent keypresses",
+    "inter_key_delay_std":       "Typing rhythm variance {direction} {pct}% -- inconsistent keypresses",
     "inter_key_delay_p95":       "Peak typing delay {direction} {pct}% above normal",
     "dwell_time_mean":           "Key hold duration {direction} {pct}% from baseline",
-    "dwell_time_std":            "Key hold variance {direction} — possible manual hesitation",
-    "error_rate":                "Typing error rate {direction} {pct}% — {direction_text}",
+    "dwell_time_std":            "Key hold variance {direction} -- possible manual hesitation",
+    "error_rate":                "Typing error rate {direction} {pct}% -- {direction_text}",
     "backspace_frequency":       "Backspace use {direction} {pct}% from baseline",
-    "typing_burst_count":        "Typing burst count {direction} — possible single-burst automation",
+    "typing_burst_count":        "Typing burst count {direction} -- possible single-burst automation",
     "words_per_minute":          "Input speed {direction} {pct}% from enrolled baseline",
     "tap_pressure_mean":         "Touch pressure {direction} {pct}% from baseline",
-    "tap_pressure_std":          "Touch pressure variance {direction} — unusual hand behavior",
-    "swipe_velocity_mean":       "Swipe speed {direction} {pct}% — possible non-touch device",
-    "swipe_velocity_std":        "Swipe speed variance {direction} — unfamiliar device handling",
+    "tap_pressure_std":          "Touch pressure variance {direction} -- unusual hand behavior",
+    "swipe_velocity_mean":       "Swipe speed {direction} {pct}% -- possible non-touch device",
+    "swipe_velocity_std":        "Swipe speed variance {direction} -- unfamiliar device handling",
     "gesture_curvature_mean":    "Gesture path curvature {direction} from enrolled pattern",
-    "pinch_zoom_accel_mean":     "Pinch-zoom behavior {direction} — gesture pattern mismatch",
+    "pinch_zoom_accel_mean":     "Pinch-zoom behavior {direction} -- gesture pattern mismatch",
     "tap_duration_mean":         "Tap duration {direction} {pct}% from baseline",
-    "tap_duration_std":          "Tap duration variance elevated — possible non-human input",
-    "hand_stability_score":      "Device stability {direction} {pct}% — motion pattern mismatch",
+    "tap_duration_std":          "Tap duration variance elevated -- possible non-human input",
+    "hand_stability_score":      "Device stability {direction} {pct}% -- motion pattern mismatch",
     "accel_x_std":               "X-axis accelerometer variance {direction} during session",
     "accel_y_std":               "Y-axis accelerometer variance {direction} during session",
     "accel_z_std":               "Z-axis accelerometer variance {direction} during session",
-    "gyro_x_std":                "Gyroscope X-axis variance {direction} — unusual device orientation",
+    "gyro_x_std":                "Gyroscope X-axis variance {direction} -- unusual device orientation",
     "gyro_y_std":                "Gyroscope Y-axis variance {direction}",
     "gyro_z_std":                "Gyroscope Z-axis variance {direction}",
     "device_tilt_mean":          "Device tilt angle {direction} {pct}% from enrolled posture",
-    "screens_visited_count":     "Screen count {direction} {pct}% — {direction_text} exploration",
+    "screens_visited_count":     "Screen count {direction} {pct}% -- {direction_text} exploration",
     "navigation_depth_max":      "Navigation depth {direction} from typical session pattern",
-    "back_navigation_count":     "Back-navigation count {direction} {pct}% — {direction_text}",
-    "time_on_dashboard_ms":      "Dashboard dwell time {direction} {pct}% — {direction_text}",
+    "back_navigation_count":     "Back-navigation count {direction} {pct}% -- {direction_text}",
+    "time_on_dashboard_ms":      "Dashboard dwell time {direction} {pct}% -- {direction_text}",
     "time_on_transfer_ms":       "Transfer screen dwell {direction} {pct}% from baseline",
-    "direct_to_transfer":        "Navigated directly to transfer — atypical for this user",
-    "form_field_order_entropy":  "Form completion order atypical — possible automated input",
+    "direct_to_transfer":        "Navigated directly to transfer -- atypical for this user",
+    "form_field_order_entropy":  "Form completion order atypical -- possible automated input",
     "session_revisit_count":     "Screen revisit count {direction} {pct}%",
     "exploratory_ratio":         "Navigation {direction} {pct}% more exploratory than normal",
-    "session_duration_ms":       "Session {direction} {pct}% than user average — {direction_text}",
-    "session_duration_z_score":  "Session duration z-score {direction} — statistical outlier",
-    "time_of_day_hour":          "Login at {value:.0f}:00 — outside user's typical hours",
+    "session_duration_ms":       "Session {direction} {pct}% than user average -- {direction_text}",
+    "session_duration_z_score":  "Session duration z-score {direction} -- statistical outlier",
+    "time_of_day_hour":          "Login at {value:.0f}:00 -- outside user's typical hours",
     "time_to_submit_otp_ms":     "OTP submitted {pct}% {direction} than user average",
     "click_speed_mean":          "Click speed {direction} {pct}% from baseline",
-    "click_speed_std":           "Click timing variance {direction} — possible automation",
-    "form_submit_speed_ms":      "Form submission speed {direction} {pct}% — {direction_text}",
-    "interaction_pace_ratio":    "Interaction pace {direction} {pct}% — {direction_text}",
-    "is_new_device":             "Device fingerprint unknown — never seen for this account",
-    "device_fingerprint_delta":  "Device fingerprint similarity {direction} — likely different hardware",
-    "timezone_changed":          "Timezone differs from last 5 sessions — location anomaly",
+    "click_speed_std":           "Click timing variance {direction} -- possible automation",
+    "form_submit_speed_ms":      "Form submission speed {direction} {pct}% -- {direction_text}",
+    "interaction_pace_ratio":    "Interaction pace {direction} {pct}% -- {direction_text}",
+    "is_new_device":             "Device fingerprint unknown -- never seen for this account",
+    "device_fingerprint_delta":  "Device fingerprint similarity {direction} -- likely different hardware",
+    "timezone_changed":          "Timezone differs from last 5 sessions -- location anomaly",
     "os_version_changed":        "OS version changed since last session",
     # SIM swap always appended last when active:
     "SIM_SWAP":                  "SIM swap event detected {minutes} minute(s) ago (telecom signal)",
@@ -653,11 +659,11 @@ def get_top_anomalies(
 
     Args:
         feature_vector:    list[float] len=47
-        per_feature_mean:  list[float] len=47 — from get_baseline_stats()
-        per_feature_std:   list[float] len=47 — from get_baseline_stats()
+        per_feature_mean:  list[float] len=47 -- from get_baseline_stats()
+        per_feature_std:   list[float] len=47 -- from get_baseline_stats()
         sim_swap_active:   bool
-        sim_swap_minutes:  int — minutes since SIM swap triggered
-        n:                 int — total anomalies to return (default 4)
+        sim_swap_minutes:  int -- minutes since SIM swap triggered
+        n:                 int -- total anomalies to return (default 4)
 
     Returns:
         list[str] len=n
@@ -776,8 +782,8 @@ def check_fleet_anomaly(
 
     Args:
         db:                 SQLAlchemy session
-        device_fingerprint: str — hash of device characteristics
-        current_user_id:    int — current session's user
+        device_fingerprint: str -- hash of device characteristics
+        current_user_id:    int -- current session's user
 
     Returns:
         {
@@ -837,7 +843,7 @@ def _register_device(db: DBSession, fingerprint: str, user_id: int) -> None:
 ### 3.6 `ml/lstm_autoencoder.py`
 
 ```python
-# LSTM Autoencoder — production upgrade path.
+# LSTM Autoencoder -- production upgrade path.
 # Demo: show this as a slide, not in live inference.
 # Implement as a runnable script, not called during demo.
 
@@ -848,8 +854,8 @@ import numpy as np
 class BehaviorAutoencoder(nn.Module):
     """
     LSTM Autoencoder for behavioral time-series anomaly detection.
-    Input:  (batch, seq_len, 47) — sequence of feature snapshots per session
-    Output: reconstruction of input — anomaly score = MSE reconstruction error
+    Input:  (batch, seq_len, 47) -- sequence of feature snapshots per session
+    Output: reconstruction of input -- anomaly score = MSE reconstruction error
     """
     def __init__(self, input_dim: int = 47, hidden_dim: int = 32, latent_dim: int = 16):
         super().__init__()
@@ -875,7 +881,7 @@ def anomaly_score(model: BehaviorAutoencoder, session_snapshots: list[list[float
     Args:
         session_snapshots: list of 47-float lists, one per snapshot (usually 5)
     Returns:
-        float — mean squared reconstruction error
+        float -- mean squared reconstruction error
     """
     x = torch.tensor([session_snapshots], dtype=torch.float32)  # (1, 5, 47)
     model.eval()
@@ -1170,7 +1176,7 @@ def _generate_one(profile: dict) -> list[float]:
 All routers follow this pattern:
 - Import Pydantic request/response models
 - Inject DB via `Depends(get_db)`
-- Call ML or service functions — no business logic in the router
+- Call ML or service functions -- no business logic in the router
 - Return typed response
 
 ### 5.1 `routers/session.py`
@@ -1570,7 +1576,7 @@ def send_alert(
 
     return AlertResponse(sent=True, message_sid=message_sid)
 
-# Called internally by session.py — not an HTTP route
+# Called internally by session.py -- not an HTTP route
 def send_sms_alert(
     session_id: str,
     score: int,
@@ -1613,10 +1619,10 @@ SCENARIO_METADATA = [
     {"id": 1, "name": "New Phone + SIM",          "description": "SIM swap + attacker's own device",            "expected_score": 27, "expected_action": "BLOCK_AND_FREEZE",   "detection_time_s": 28,  "strength": "strong"},
     {"id": 2, "name": "Laptop + OTP SIM",         "description": "Fraud on laptop, OTP from SIM",               "expected_score": 31, "expected_action": "BLOCK_TRANSACTION",  "detection_time_s": 34,  "strength": "strong"},
     {"id": 3, "name": "Bot Automation",           "description": "Fully automated scripted attack",              "expected_score": 19, "expected_action": "BLOCK_AND_FREEZE",   "detection_time_s": 12,  "strength": "strong"},
-    {"id": 4, "name": "Same Device Takeover",     "description": "Stolen phone + SIM — hardest case",           "expected_score": 48, "expected_action": "STEP_UP_AUTH",       "detection_time_s": 52,  "strength": "moderate"},
+    {"id": 4, "name": "Same Device Takeover",     "description": "Stolen phone + SIM -- hardest case",           "expected_score": 48, "expected_action": "STEP_UP_AUTH",       "detection_time_s": 52,  "strength": "moderate"},
     {"id": 5, "name": "Credential Stuffing",      "description": "Fleet attack: 3 accounts, 1 device, 8 min",   "expected_score": 22, "expected_action": "BLOCK_AND_FREEZE",   "detection_time_s": None, "strength": "strong"},
     {"id": 6, "name": "Pre-Auth SIM Probe",       "description": "Reconnaissance before login attempt",         "expected_score": None, "expected_action": "EARLY_WARNING",    "detection_time_s": None, "strength": "strong"},
-    {"id": 7, "name": "Legitimate User (Control)","description": "Enrolled user — should ALLOW",                "expected_score": 89, "expected_action": "ALLOW",              "detection_time_s": None, "strength": "control"},
+    {"id": 7, "name": "Legitimate User (Control)","description": "Enrolled user -- should ALLOW",                "expected_score": 89, "expected_action": "ALLOW",              "detection_time_s": None, "strength": "control"},
 ]
 
 class RunRequest(BaseModel):
@@ -1785,7 +1791,7 @@ def send_sms(to: str, score: int, top_anomalies: list[str]) -> str | None:
     from_number = os.getenv("TWILIO_FROM_NUMBER")
 
     if not all([account_sid, auth_token, from_number, to]):
-        print("[TWILIO] Not configured — alert logged but not sent")
+        print("[TWILIO] Not configured -- alert logged but not sent")
         return None
 
     # Max 2 anomalies in SMS to keep it readable
@@ -1838,7 +1844,7 @@ def run():
     print("1. Resetting database...")
     Base.metadata.drop_all(bind=ENGINE)
     Base.metadata.create_all(bind=ENGINE)
-    print("   ✓ Tables recreated")
+    print("   [DONE] Tables recreated")
 
     db = SessionLocal()
 
@@ -1848,14 +1854,14 @@ def run():
     user = User(id=1, name="Demo User", enrolled_at=datetime.utcnow() - timedelta(days=30))
     db.add(user)
     db.commit()
-    print("   ✓ User: Demo User (id=1)")
+    print("   [DONE] User: Demo User (id=1)")
 
     # Step 3: Register 3 known devices
     print("3. Registering known devices...")
     for fp in ["DEVICE_KNOWN_001", "DEVICE_KNOWN_002", "DEVICE_KNOWN_003"]:
         db.add(DeviceRegistry(user_id=1, device_fingerprint=fp, is_trusted=True))
     db.commit()
-    print("   ✓ 3 known devices registered")
+    print("   [DONE] 3 known devices registered")
 
     # Step 4: Generate legitimate sessions
     print("4. Generating legitimate sessions...")
@@ -1869,18 +1875,18 @@ def run():
         )
         db.add(s)
     db.commit()
-    print("   ✓ 10 legitimate sessions seeded")
+    print("   [DONE] 10 legitimate sessions seeded")
 
     # Step 5: Train model
     print("5. Training One-Class SVM...")
     meta = train(user_id=1, feature_vectors=vectors)
-    print(f"   ✓ Model trained | Baseline: {meta['baseline_mean']:.1f} ± {meta['baseline_std']:.1f}")
+    print(f"   [DONE] Model trained | Baseline: {meta['baseline_mean']:.1f} ± {meta['baseline_std']:.1f}")
 
     # Verify legitimate sessions score correctly
     for vec in vectors:
         score = predict(1, vec)
-        assert score >= 75, f"Legitimate session scored {score} — calibration failed"
-    print("   ✓ Legitimate session scores verified (all ≥ 75)")
+        assert score >= 75, f"Legitimate session scored {score} -- calibration failed"
+    print("   [DONE] Legitimate session scores verified (all ≥ 75)")
 
     # Step 6: Seed scenario sessions
     print("6. Seeding attack scenarios...")
@@ -1888,7 +1894,7 @@ def run():
     for scenario_id in range(1, 7):
         data = generate_scenario_session(scenario_id)
         if data.get("pre_auth"):
-            print(f"   ✓ Scenario {scenario_id}: Pre-auth (no feature vector)")
+            print(f"   [DONE] Scenario {scenario_id}: Pre-auth (no feature vector)")
             continue
 
         s = SessionModel(
@@ -1905,7 +1911,7 @@ def run():
         fusion = fuse_score(raw, sim_swap_active=True)
         scenario_checks[scenario_id] = fusion["final_score"]
 
-    # Step 7: Seed fleet scenario (scenario 5 — register attacker device on user 2)
+    # Step 7: Seed fleet scenario (scenario 5 -- register attacker device on user 2)
     user2 = User(id=2, name="Demo User 2", enrolled_at=None)
     db.add(user2)
     db.commit()
@@ -1915,7 +1921,7 @@ def run():
         is_trusted=False,
     ))
     db.commit()
-    print("   ✓ Fleet scenario device registered (user_id=2)")
+    print("   [DONE] Fleet scenario device registered (user_id=2)")
 
     # Step 8: Print verification table
     print("\n   Scenario Score Verification:")
@@ -1924,7 +1930,7 @@ def run():
     for sid, score in scenario_checks.items():
         lo, hi = targets.get(sid, (0, 100))
         ok = lo <= score <= hi
-        status = "✓" if ok else "✗"
+        status = "[DONE]" if ok else "✗"
         if not ok:
             all_ok = False
         print(f"   {status} Scenario {sid}: score={score} (target {lo}–{hi})")
@@ -1932,12 +1938,12 @@ def run():
     if not all_ok:
         print("\n   ⚠ Some scores out of target range. Adjust SVM_NU in .env and re-run.")
     else:
-        print("\n   ✓ All scenario scores within target ranges")
+        print("\n   [DONE] All scenario scores within target ranges")
 
     db.close()
 
     print("\n══════════════════")
-    print("✓ SHIELD is ready.")
+    print("[DONE] SHIELD is ready.")
     print("  Run: uvicorn main:app --reload --port 8000")
 
 if __name__ == "__main__":
@@ -1971,7 +1977,7 @@ def test_legitimate_sessions_score_high():
     vectors = generate_legitimate_sessions(n=10)
     for i, vec in enumerate(vectors):
         score = predict(USER_ID, vec)
-        assert score >= 75, f"Legitimate session {i} scored {score} — too low"
+        assert score >= 75, f"Legitimate session {i} scored {score} -- too low"
 
 def test_scenario_1_blocked():
     """New device + SIM → score ≤ 30."""
@@ -1994,7 +2000,7 @@ def test_scenario_4_step_up():
     score = predict(USER_ID, data["feature_vector"])
     fusion = fuse_score(score, sim_swap_active=True)
     assert 35 <= fusion["final_score"] <= 65, \
-        f"Scenario 4 scored {fusion['final_score']} — expected step-up range"
+        f"Scenario 4 scored {fusion['final_score']} -- expected step-up range"
 
 def test_sim_swap_fusion_critical():
     """SIM swap + score < 45 → always CRITICAL."""
@@ -2077,7 +2083,7 @@ Step 18: routers/scenarios.py → test all 6 /scenarios/{id}/run
 Step 19: routers/features.py → verify 47 rows returned
 Step 20: routers/fleet.py → verify fleet anomaly fires correctly
 Step 21: backend/tests/ → all tests pass
-Step 22: Full demo run end-to-end — all 6 scenarios, Twilio fires, comparison table fills
+Step 22: Full demo run end-to-end -- all 6 scenarios, Twilio fires, comparison table fills
 ```
 
 **At each step: if output does not match spec, fix before proceeding.**
