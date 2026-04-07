@@ -8,60 +8,60 @@ FLEET_MIN_ACCOUNTS = 2
 
 def check_fleet_anomaly(device_fingerprint: str, user_id: int) -> dict:
     """
-    Detect if a device fingerprint is being used across multiple accounts
-    within a short time window (potential fraud signal).
+    Cross-account attack detection. Identifies same device used across
+    multiple user accounts in a short time window.
     """
     db = SessionLocal()
     try:
         window_start = datetime.utcnow() - timedelta(minutes=FLEET_WINDOW_MINUTES)
 
-        # Get distinct users using this device recently
-        distinct_users = db.query(DeviceRegistry.user_id).filter(
+        # 1. Get distinct user_ids recently using this device
+        rows = db.query(DeviceRegistry.user_id).filter(
             DeviceRegistry.device_fingerprint == device_fingerprint,
             DeviceRegistry.last_seen >= window_start
         ).distinct().all()
 
-        user_ids = [u[0] for u in distinct_users]
+        distinct_accounts = [r[0] for r in rows]
 
-        # Include current user if not already tracked
-        if user_id not in user_ids:
-            user_ids.append(user_id)
+        # 2. Register current check
+        _register_device(db, device_fingerprint, user_id)
 
-        fleet_anomaly = len(user_ids) >= FLEET_MIN_ACCOUNTS
+        # If current user isn't in registry yet, add to memory for the len check
+        if user_id not in distinct_accounts:
+            distinct_accounts.append(user_id)
+
+        fleet_anomaly = len(distinct_accounts) >= FLEET_MIN_ACCOUNTS
 
         return {
-            "fleet_anomaly": fleet_anomaly,
-            "accounts_seen": len(user_ids),
-            "affected_users": user_ids,
-            "action": "FREEZE_ALL_ACCOUNTS" if fleet_anomaly else "ALLOW"
+            "fleet_anomaly":      fleet_anomaly,
+            "accounts_seen":      len(distinct_accounts),
+            "action":             "CRITICAL_ALL_ACCOUNTS_FROZEN" if fleet_anomaly else "ALLOW",
+            "flagged_accounts":   distinct_accounts,
+            "device_fingerprint": device_fingerprint
         }
 
     finally:
         db.close()
 
 
-def register_device(user_id: int, device_fingerprint: str):
+def _register_device(db, device_fingerprint: str, user_id: int):
     """
-    Register or update a device fingerprint for a user.
+    Internal: Upsert device registration.
     """
-    db = SessionLocal()
-    try:
-        device = db.query(DeviceRegistry).filter(
-            DeviceRegistry.user_id == user_id,
-            DeviceRegistry.device_fingerprint == device_fingerprint
-        ).first()
+    device = db.query(DeviceRegistry).filter(
+        DeviceRegistry.user_id == user_id,
+        DeviceRegistry.device_fingerprint == device_fingerprint
+    ).first()
 
-        if device:
-            device.last_seen = datetime.utcnow()
-        else:
-            device = DeviceRegistry(
-                user_id=user_id,
-                device_fingerprint=device_fingerprint
-            )
-            db.add(device)
+    if device:
+        device.last_seen = datetime.utcnow()
+    else:
+        device = DeviceRegistry(
+            user_id=user_id,
+            device_fingerprint=device_fingerprint,
+            first_seen=datetime.utcnow(),
+            last_seen=datetime.utcnow()
+        )
+        db.add(device)
 
-        db.commit()
-        return device
-
-    finally:
-        db.close()
+    db.commit()
