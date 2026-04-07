@@ -18,7 +18,8 @@ class Session(Base):
     id = Column(String, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     started_at = Column(DateTime, default=datetime.datetime.utcnow)
-    session_type = Column(String)  # 'legitimate' | 'attacker'
+    session_type = Column(String)   # 'legitimate' | 'attacker'
+    device_class = Column(String, default="mobile")  # 'mobile' | 'desktop' | 'tablet'
     feature_vector_json = Column(JSON)
 
 class Score(Base):
@@ -51,6 +52,9 @@ class DeviceRegistry(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     device_fingerprint = Column(String)
+    device_class = Column(String, default="mobile")   # 'mobile' | 'desktop' | 'tablet'
+    trust_level = Column(String, default="new")        # 'new' | 'known' | 'one-time'
+    session_count = Column(Integer, default=0)         # sessions on this exact fingerprint
     first_seen = Column(DateTime, default=datetime.datetime.utcnow)
     last_seen = Column(DateTime, default=datetime.datetime.utcnow)
 

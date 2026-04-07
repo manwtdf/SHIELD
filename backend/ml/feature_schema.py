@@ -45,7 +45,7 @@ FEATURE_NAMES = [
     # Temporal Behavior (8 features)
     "session_duration_ms",        # total session length
     "session_duration_z_score",   # z-score vs user's historical mean
-    "time_of_day_hour",           # hour of session start (0–23)
+    "time_of_day_hour",           # hour of session start (0-23)
     "time_to_submit_otp_ms",      # time between OTP received and submitted
     "click_speed_mean",           # mean ms between consecutive UI interactions
     "click_speed_std",
@@ -57,6 +57,18 @@ FEATURE_NAMES = [
     "device_fingerprint_delta",   # cosine distance from nearest known device
     "timezone_changed",           # 1 if timezone differs from last 5 sessions
     "os_version_changed",         # 1 if OS version changed since last session
+
+    # Device Trust Context (5 features — NEW: multi-device / PC support)
+    "device_class_known",         # 1 if user has prior sessions on this device class (mobile/desktop)
+    "device_session_count",       # count of prior sessions on this exact device fingerprint
+    "device_class_switch",        # 1 if current class differs from user's dominant class last 30 days
+    "is_known_fingerprint",       # 1 if fingerprint in device_registry with session_count >= 3
+    "time_since_last_seen_hours", # hours since this device was last used (0 if never seen)
+
+    # Desktop Mouse Biometrics (3 features — NEW: always 0.0 on mobile/touch device)
+    "mouse_movement_entropy",     # Shannon entropy of mouse path (0.0 on mobile always)
+    "mouse_speed_cv",             # coeff of variation of mouse speed (bots ~0.0, humans 0.3-0.8)
+    "scroll_wheel_event_count",   # count of scroll wheel events (impossible on mobile = 0 always)
 ]
 
-assert len(FEATURE_NAMES) == 47
+assert len(FEATURE_NAMES) == 55
