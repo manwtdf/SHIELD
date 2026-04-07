@@ -1,18 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { MOCK_FEATURES } from './types';
 
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
 interface FeatureInspectorProps {
   visible: boolean;
+  sessionId?: string;
 }
 
-export default function FeatureInspector({ visible }: FeatureInspectorProps) {
+export default function FeatureInspector({ visible, sessionId }: FeatureInspectorProps) {
   const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [realFeatures, setRealFeatures] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (visible && sessionId) {
+      fetch(`${API_BASE}/features/inspect/${sessionId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.features) {
+            setRealFeatures(data.features);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [visible, sessionId]);
 
   if (!visible) return null;
 
-  const sorted = [...MOCK_FEATURES].sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore));
+  const dataset = realFeatures.length > 0 ? realFeatures : MOCK_FEATURES;
+  const sorted = [...dataset].sort((a, b) => {
+    const zA = a.z_score ?? a.zScore;
+    const zB = b.z_score ?? b.zScore;
+    return Math.abs(zB) - Math.abs(zA);
+  });
+  
   const displayed = showAll ? sorted : sorted.slice(0, 10);
 
   return (
@@ -40,7 +63,8 @@ export default function FeatureInspector({ visible }: FeatureInspectorProps) {
             </thead>
             <tbody>
               {displayed.map((f) => {
-                const absZ = Math.abs(f.zScore);
+                const zVal = f.z_score ?? f.zScore;
+                const absZ = Math.abs(zVal);
                 const rowBg = absZ > 3.0
                   ? 'bg-[rgba(239,68,68,0.15)]'
                   : absZ > 2.0
@@ -50,12 +74,12 @@ export default function FeatureInspector({ visible }: FeatureInspectorProps) {
                   <tr key={f.name} className={`${rowBg} border-b border-border/30`}>
                     <td className="p-2 font-mono text-foreground">{f.name}</td>
                     <td className="p-2 text-right font-mono text-slate-500">{f.baseline}</td>
-                    <td className="p-2 text-right font-mono text-foreground">{f.session}</td>
+                    <td className="p-2 text-right font-mono text-foreground">{f.session ?? f.value}</td>
                     <td className="p-2 text-right">
                       <span className={`px-1.5 py-0.5 rounded font-mono ${
                         f.flagged ? 'bg-shield-red/20 text-shield-red' : 'bg-shield-green/20 text-shield-green'
                       }`}>
-                        {f.zScore.toFixed(1)}
+                        {zVal.toFixed(1)}
                       </span>
                     </td>
                     <td className="p-2 text-center">
@@ -70,7 +94,7 @@ export default function FeatureInspector({ visible }: FeatureInspectorProps) {
             onClick={() => setShowAll(!showAll)}
             className="mt-2 text-xs text-shield-green hover:underline font-mono"
           >
-            {showAll ? 'Show top 10' : `Show all ${MOCK_FEATURES.length}`}
+            {showAll ? 'Show top 10' : `Show all ${dataset.length}`}
           </button>
         </div>
       )}

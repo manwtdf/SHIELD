@@ -131,7 +131,19 @@ export const useBehaviorSDK = (userId: number, sessionId: string | null) => {
           "is_new_device": 0,
           "device_fingerprint_delta": 0.05,
           "timezone_changed": 0,
-          "os_version_changed": 0
+          "os_version_changed": 0,
+
+          // Device Trust Context (5)
+          "device_class_known": 1,
+          "device_session_count": 5,
+          "device_class_switch": 0,
+          "is_known_fingerprint": 1,
+          "time_since_last_seen_hours": 1.2,
+
+          // Desktop Mouse Biometrics (3)
+          "mouse_movement_entropy": 0.0,
+          "mouse_speed_cv": 0.0,
+          "scroll_wheel_event_count": 0
       };
 
       return snapshot;

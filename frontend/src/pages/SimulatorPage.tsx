@@ -28,7 +28,7 @@ export const SimulatorPage = () => {
   const [anomalyCount, setAnomalyCount] = useState(0);
   const [showLegacy, setShowLegacy] = useState(false);
   const [showFeatures, setShowFeatures] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const apiCall = async (url: string, method: string, body?: object) => {
     try {
@@ -80,17 +80,27 @@ export const SimulatorPage = () => {
     } else if (step === 2) {
       updateStep(2, 'active');
       setPhase('attacking');
-      apiCall(`${API_BASE}/scenarios/${activeScenario}/run`, 'POST', { user_id: 1 });
+      
+      let runResponse: any = await apiCall(`${API_BASE}/scenarios/${activeScenario}/run`, 'POST', { user_id: 1 });
+      if (!runResponse) {
+        runResponse = {
+          score_progression: [91, 80, 60, 40, scenarioData.score],
+          final_score: scenarioData.score,
+          action: scenarioData.result,
+        };
+      }
 
+      const prog = runResponse.score_progression || [];
       const totalAnomalies = scenario.isAttack ? 8 : 1;
+      
       for (let i = 1; i <= 5; i++) {
         setStepData(d => ({ ...d, snapshot: `Snapshot ${i}/5...` }));
         setAnomalyCount(Math.min(Math.round((i / 5) * totalAnomalies), totalAnomalies));
-        setScore(Math.round(scenarioData.score + ((91 - scenarioData.score) * (5 - i)) / 5));
+        setScore(prog[i - 1] ?? scenarioData.score);
         await new Promise(r => setTimeout(r, 800));
       }
 
-      setScore(scenarioData.score);
+      setScore(runResponse.final_score);
       setAnomalyCount(totalAnomalies);
       setPhase(scenario.isAttack ? 'blocked' : 'allowed');
       setShowFeatures(true);
@@ -100,10 +110,10 @@ export const SimulatorPage = () => {
         {
           scenarioId: scenario.id,
           scenarioName: scenario.name,
-          score: scenarioData.score,
+          score: runResponse.final_score,
           detected: scenario.isAttack,
           time: scenarioData.time,
-          result: scenarioData.result,
+          result: runResponse.action.replace('_AND_', ' + ').replace('_', ' '),
           legacyResult: scenario.isAttack ? 'APPROVED ❌' : 'ALLOWED ✅',
         },
       ]);
@@ -184,7 +194,7 @@ export const SimulatorPage = () => {
         </main>
       </div>
 
-      <FeatureInspector visible={showFeatures} />
+      <FeatureInspector visible={showFeatures} sessionId={`scenario_${activeScenario}`} />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Lock, CreditCard, CheckCircle, AlertTriangle, Home, Clock, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { useBehaviorSDK } from '../hooks/useBehaviorSDK';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -32,6 +33,9 @@ export const BankingAppPage = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const userId = 1;
 
+  // Initialize behavioral tracking SDK
+  useBehaviorSDK(userId, sessionId);
+
   // Poll for freeze status
   useEffect(() => {
     if (!sessionId) return;
@@ -50,14 +54,8 @@ export const BankingAppPage = () => {
     return () => clearInterval(interval);
   }, [sessionId]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setActiveScreen('DASHBOARD');
-  };
-
-  const handleTransfer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Start session
     if (!sessionId) {
       try {
         const res = await axios.post(`${BACKEND_URL}/session/start`, {
@@ -65,10 +63,15 @@ export const BankingAppPage = () => {
           session_type: 'legitimate'
         });
         setSessionId(res.data.session_id);
-      } catch {
-        // Continue even without backend
+      } catch (err) {
+        console.error("Session start failed", err);
       }
     }
+    setActiveScreen('DASHBOARD');
+  };
+
+  const handleTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
     setActiveScreen('OTP');
     setTimeout(() => {
       if (isFrozen) {

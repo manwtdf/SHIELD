@@ -1,13 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, AlertTriangle, Circle, MessageSquare } from "lucide-react";
 
-const alerts = [
-  { id: 1, severity: "critical", icon: Zap, text: "SIM SWAP ACTIVE", time: "6 min ago" },
-  { id: 2, severity: "critical", icon: Circle, text: "New device fingerprint", time: "6 min ago" },
-  { id: 3, severity: "warning", icon: AlertTriangle, text: "Typing anomaly — +80% delay", time: "12 min ago" },
-  { id: 4, severity: "warning", icon: AlertTriangle, text: "Navigation — direct to transfer", time: "18 min ago" },
-];
-
 const severityStyles: Record<string, string> = {
   critical: "border-shield-critical/30 bg-shield-critical/5",
   warning: "border-shield-warning/30 bg-shield-warning/5",
@@ -18,7 +11,23 @@ const iconStyles: Record<string, string> = {
   warning: "text-shield-warning",
 };
 
-const AlertFeed = () => {
+interface AlertFeedProps {
+  topAnomalies?: string[];
+  action?: string;
+  riskLevel?: string;
+}
+
+const AlertFeed = ({ topAnomalies = [], action, riskLevel }: AlertFeedProps) => {
+  const alerts = topAnomalies.map((text, i) => {
+    let severity = "warning";
+    let icon = AlertTriangle;
+    if (text.toUpperCase().includes("SIM SWAP") || riskLevel === "CRITICAL") {
+      severity = "critical";
+      if (text.toUpperCase().includes("SIM")) icon = Zap;
+    }
+    return { id: `anomaly-${i}`, severity, icon, text, time: "Just now" };
+  });
+
   const hasCritical = alerts.some((a) => a.severity === "critical");
 
   const handleSendAlert = async () => {
