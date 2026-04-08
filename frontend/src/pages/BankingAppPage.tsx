@@ -35,7 +35,7 @@ export const BankingAppPage = () => {
   
   // Sandbox State
   const [sandboxMode, setSandboxMode] = useState<'OFF' | 'TRAINING' | 'TESTING'>('OFF');
-  const targetUserId = sandboxMode === 'OFF' ? 1 : 999;
+  const targetUserId = sandboxMode === 'OFF' ? 1 : 1;
   const sessionType = sandboxMode === 'TESTING' ? 'attacker' : 'legitimate';
 
   // Initialize behavioral tracking SDK
@@ -68,6 +68,7 @@ export const BankingAppPage = () => {
           session_type: sessionType
         });
         setSessionId(res.data.session_id);
+        localStorage.setItem('shieldSessionId', res.data.session_id);
       } catch (err) {
         console.error("Session start failed", err);
       }
@@ -89,6 +90,7 @@ export const BankingAppPage = () => {
 
   const handleLogout = () => {
     setSessionId(null);
+    localStorage.removeItem('shieldSessionId');
     setIsFrozen(false);
     setActiveScreen('LOGIN');
   };
@@ -97,7 +99,7 @@ export const BankingAppPage = () => {
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 pb-28">
       {/* Sandbox Controller Overlay */}
       <SandboxController 
-        userId={999}
+        userId={1}
         mode={sandboxMode}
         setMode={setSandboxMode}
         currentScore={currentScore}

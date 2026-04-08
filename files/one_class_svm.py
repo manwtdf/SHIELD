@@ -26,25 +26,18 @@ IMPLEMENTATION:
 
   Regularization: Ledoit-Wolf shrinkage on covariance → stable inverse even
   when N < D (reduces to diagonal + off-diagonal shrinkage factor)
-
-CRITICAL: This module has NO database imports. Training vectors are
-passed in by the caller (enroll router or seed_runner). This is the
-correct separation of concerns.
 """
 
 import os
 import json
 import pickle
-import logging
 import numpy as np
 from sklearn.covariance import LedoitWolf
 from sklearn.preprocessing import StandardScaler
 
-from backend.ml.feature_schema import FEATURE_NAMES
+from ml.feature_schema import FEATURE_NAMES
 
-logger = logging.getLogger("shield.ml.scorer")
-
-MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
+MODEL_DIR = os.getenv("MODEL_DIR", "models")
 N_FEATURES = len(FEATURE_NAMES)  # 55
 
 
@@ -98,11 +91,6 @@ def train(user_id: int, feature_vectors: list[list[float]]) -> dict:
     X = np.array(feature_vectors, dtype=float)  # (N, 55)
     N, D = X.shape
 
-    if D != N_FEATURES:
-        raise ValueError(f"Expected {N_FEATURES} features per vector, got {D}")
-
-    logger.info(f"Training Mahalanobis scorer for user {user_id} with {N} sessions")
-
     # ── Step 1: StandardScaler ────────────────────────────────────────────────
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)  # (N, 55), each feature: mean=0 std=1
@@ -138,8 +126,6 @@ def train(user_id: int, feature_vectors: list[list[float]]) -> dict:
     baseline_mean = float(np.mean(training_scores))
     baseline_std  = float(np.std(training_scores))
 
-    logger.info(f"Calibration: baseline={baseline_mean:.1f} ± {baseline_std:.1f}, λ={lam:.4f}")
-
     # ── Step 6: Save artifacts ────────────────────────────────────────────────
     artifacts = {
         "mu": mu.tolist(),
@@ -168,7 +154,6 @@ def train(user_id: int, feature_vectors: list[list[float]]) -> dict:
     with open(_meta_path(user_id), "w") as f:
         json.dump(meta, f, indent=2)
 
-    logger.info(f"Model saved for user {user_id}: {_cov_path(user_id)}")
     return meta
 
 
@@ -195,9 +180,6 @@ def predict(user_id: int, feature_vector: list[float]) -> int:
     Raises:
         FileNotFoundError if model not trained
     """
-    if len(feature_vector) != N_FEATURES:
-        raise ValueError(f"Expected {N_FEATURES} features, got {len(feature_vector)}")
-
     scaler, artifacts = _load_artifacts(user_id)
 
     x = np.array(feature_vector, dtype=float).reshape(1, -1)
@@ -248,11 +230,6 @@ def model_exists(user_id: int) -> bool:
 
 def _load_artifacts(user_id: int):
     """Returns (scaler, artifacts_dict). Raises FileNotFoundError if missing."""
-    if not model_exists(user_id):
-        raise FileNotFoundError(
-            f"No trained model for user {user_id}. "
-            f"Run POST /enroll/{user_id} or seed_runner.py first."
-        )
     with open(_scaler_path(user_id), "rb") as f:
         scaler = pickle.load(f)
     with open(_cov_path(user_id), "rb") as f:
@@ -265,8 +242,7 @@ def _mahalanobis_single(x: np.ndarray, mu: np.ndarray, precision: np.ndarray) ->
     D_M = sqrt((x - mu)^T * Precision * (x - mu))
     """
     diff = x - mu
-    val = float(diff @ precision @ diff)
-    return float(np.sqrt(max(0.0, val)))
+    return float(np.sqrt(diff @ precision @ diff))
 
 def _mahalanobis_batch(X: np.ndarray, mu: np.ndarray, precision: np.ndarray) -> np.ndarray:
     """

@@ -15,11 +15,12 @@ import json
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from backend.db.database import init_db, SessionLocal, ENGINE
-from backend.db.models import Base, User, Session as SessionModel, DeviceRegistry
-from backend.data.seed_data import generate_legitimate_sessions, generate_scenario_session, verify_attacker_deviation
-from backend.ml.one_class_svm import train, predict, diagnostic_report, model_exists
-from backend.ml.score_fusion import fuse_score
+from db.database import init_db, SessionLocal, ENGINE
+from db.models import Base, User, Session as SessionModel, DeviceRegistry
+from data.seed_legitimate import generate_legitimate_sessions
+from data.seed_scenarios import generate_scenario_session, verify_attacker_deviation
+from ml.one_class_svm import train, predict, diagnostic_report, model_exists
+from ml.score_fusion import fuse_score
 from datetime import datetime, timedelta
 
 GREEN  = "\033[92m"
@@ -189,8 +190,8 @@ def run():
 
     # ── Step 9: Progressive snapshot verification ─────────────────────────────
     header("9. Verifying score degradation progression")
-    from backend.data.seed_data import generate_scenario_session as gen
-    from backend.ml.feature_schema import FEATURE_NAMES as FN
+    from data.seed_scenarios import generate_scenario_session as gen
+    from ml.feature_schema import FEATURE_NAMES as FN
 
     scenario_1_data = gen(1)
     legit_vec = [meta["per_feature_mean"][i] for i in range(55)]

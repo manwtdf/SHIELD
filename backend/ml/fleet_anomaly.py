@@ -1,73 +1,109 @@
+"""
+SHIELD Fleet Anomaly Detection
+───────────────────────────────
+Cross-account device fingerprint attack detection.
+
+Rule:
+    Same device_fingerprint seen on ≥ 2 distinct user accounts
+    within 60 minutes → FREEZE_ALL_ACCOUNTS.
+
+Detection fires on the 2nd account attempt.
+
+Accepts db session via dependency injection — no internal SessionLocal.
+"""
+
+import logging
 from datetime import datetime, timedelta
-from backend.db.models import SessionLocal, DeviceRegistry
+from sqlalchemy.orm import Session as DBSession
+from backend.db.models import DeviceRegistry
 
-# Configurable thresholds
+logger = logging.getLogger("shield.ml.fleet")
+
 FLEET_WINDOW_MINUTES = 60
-FLEET_MIN_ACCOUNTS = 2
+FLEET_THRESHOLD      = 2  # ≥ 2 distinct accounts = fleet anomaly
 
 
-def check_fleet_anomaly(device_fingerprint: str, user_id: int) -> dict:
+def check_fleet_anomaly(
+    db: DBSession,
+    device_fingerprint: str,
+    current_user_id: int,
+) -> dict:
     """
-    Cross-account attack detection. Identifies same device used across
-    multiple user accounts in a short time window.
-    """
-    db = SessionLocal()
-    try:
-        window_start = datetime.utcnow() - timedelta(minutes=FLEET_WINDOW_MINUTES)
+    Check if this device fingerprint has been seen on ≥ FLEET_THRESHOLD
+    distinct user accounts within the last FLEET_WINDOW_MINUTES minutes.
 
-        # 1. Get distinct user_ids recently using this device
-        rows = db.query(DeviceRegistry.user_id).filter(
-            DeviceRegistry.device_fingerprint == device_fingerprint,
-            DeviceRegistry.last_seen >= window_start
-        ).distinct().all()
+    Args:
+        db:                 SQLAlchemy session (injected by caller)
+        device_fingerprint: str — hash of device characteristics
+        current_user_id:    int — current session's user
 
-        distinct_accounts = [r[0] for r in rows]
-
-        # 2. Register current check
-        register_device(db, device_fingerprint, user_id)
-
-        # If current user isn't in registry yet, add to memory for the len check
-        if user_id not in distinct_accounts:
-            distinct_accounts.append(user_id)
-
-        fleet_anomaly = len(distinct_accounts) >= FLEET_MIN_ACCOUNTS
-
-        return {
-            "fleet_anomaly":      fleet_anomaly,
-            "accounts_seen":      len(distinct_accounts),
-            "action":             "CRITICAL_ALL_ACCOUNTS_FROZEN" if fleet_anomaly else "ALLOW",
-            "flagged_accounts":   distinct_accounts,
-            "device_fingerprint": device_fingerprint
+    Returns:
+        {
+            "fleet_anomaly":     bool,
+            "accounts_seen":     int,
+            "affected_user_ids": list[int],
+            "action":            str,   "FREEZE_ALL_ACCOUNTS" | "ALLOW"
         }
-
-    finally:
-        db.close()
-
-
-def register_device(db, device_fingerprint: str, user_id: int, device_class: str = "mobile"):
     """
-    Internal: Upsert device registration. Elevates trust level if seen enough times.
-    """
-    device = db.query(DeviceRegistry).filter(
-        DeviceRegistry.user_id == user_id,
-        DeviceRegistry.device_fingerprint == device_fingerprint
-    ).first()
+    cutoff = datetime.utcnow() - timedelta(minutes=FLEET_WINDOW_MINUTES)
 
-    if device:
-        device.last_seen = datetime.utcnow()
-        device.session_count += 1
-        if device.session_count >= 3:
-            device.trust_level = "known"
-    else:
-        device = DeviceRegistry(
-            user_id=user_id,
-            device_fingerprint=device_fingerprint,
-            device_class=device_class,
-            trust_level="new",
-            session_count=1,
-            first_seen=datetime.utcnow(),
-            last_seen=datetime.utcnow()
+    recent_entries = (
+        db.query(DeviceRegistry)
+        .filter(
+            DeviceRegistry.device_fingerprint == device_fingerprint,
+            DeviceRegistry.last_seen >= cutoff,
         )
-        db.add(device)
+        .all()
+    )
 
+    seen_user_ids = list({entry.user_id for entry in recent_entries})
+
+    # Register current device
+    _register_device(db, device_fingerprint, current_user_id)
+
+    if current_user_id not in seen_user_ids:
+        seen_user_ids.append(current_user_id)
+
+    accounts_seen = len(seen_user_ids)
+    fleet_anomaly = accounts_seen >= FLEET_THRESHOLD
+
+    if fleet_anomaly:
+        logger.warning(
+            f"Fleet anomaly detected: device={device_fingerprint[:16]}... "
+            f"seen on {accounts_seen} accounts: {seen_user_ids}"
+        )
+
+    return {
+        "fleet_anomaly":     fleet_anomaly,
+        "accounts_seen":     accounts_seen,
+        "affected_user_ids": seen_user_ids,
+        "action":            "FREEZE_ALL_ACCOUNTS" if fleet_anomaly else "ALLOW",
+    }
+
+
+def _register_device(
+    db: DBSession,
+    fingerprint: str,
+    user_id: int,
+    device_class: str = "mobile",
+) -> None:
+    """Upsert device fingerprint into registry. Increments session_count."""
+    existing = (
+        db.query(DeviceRegistry)
+        .filter_by(device_fingerprint=fingerprint, user_id=user_id)
+        .first()
+    )
+    if existing:
+        existing.last_seen = datetime.utcnow()
+        existing.session_count = (existing.session_count or 0) + 1
+        if existing.session_count >= 3:
+            existing.is_trusted = True
+    else:
+        db.add(DeviceRegistry(
+            user_id=user_id,
+            device_fingerprint=fingerprint,
+            device_class=device_class,
+            is_trusted=False,
+            session_count=1,
+        ))
     db.commit()

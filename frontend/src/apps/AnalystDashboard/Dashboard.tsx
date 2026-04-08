@@ -29,7 +29,7 @@ const Dashboard = () => {
         <div className="flex gap-5 mb-5">
           <UserProfilePanel data={data} />
           <ScorePanel data={data} frozen={data.frozen} />
-          <AlertFeed />
+          <AlertFeed sessionId={sessionId} topAnomalies={data.topAnomalies} riskLevel={data.riskLevel} />
         </div>
 
         {/* Bottom 2 panels */}

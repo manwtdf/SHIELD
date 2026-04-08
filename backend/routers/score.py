@@ -1,29 +1,45 @@
-from fastapi import APIRouter, HTTPException
-from backend.db.models import SessionLocal, Score
+"""
+SHIELD Score Router
+───────────────────
+GET /score/{session_id} — Get latest score for a session
+"""
 
-router = APIRouter(prefix="/score", tags=["Scoring"])
+import json
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.orm import Session as DBSession
 
-@router.get("/{session_id}")
-def get_score(session_id: str):
-    db = SessionLocal()
-    try:
-        # Get the latest score snapshot for this session
-        score = db.query(Score).filter(Score.session_id == session_id).order_by(Score.computed_at.desc()).first()
-        if not score:
-            # Baseline or empty session case
-            return {
-                "score": 91, 
-                "risk_level": "LOW", 
-                "action": "ALLOW", 
-                "top_anomalies": [],
-                "updated_at": "baseline"
-            }
-        return {
-            "score": score.confidence_score,
-            "risk_level": score.risk_level,
-            "action": "BLOCK_AND_FREEZE" if score.risk_level == "CRITICAL" else "ALLOW",
-            "top_anomalies": score.top_anomalies_json,
-            "updated_at": score.computed_at.isoformat()
-        }
-    finally:
-        db.close()
+from backend.db.database import get_db
+from backend.db.models import Score
+
+router = APIRouter()
+
+
+class ScoreResponse(BaseModel):
+    score: int
+    risk_level: str
+    action: str
+    top_anomalies: list[str]
+    snapshot_index: int
+    updated_at: str
+
+
+@router.get("/{session_id}", response_model=ScoreResponse)
+def get_score(session_id: str, db: DBSession = Depends(get_db)):
+    latest = (
+        db.query(Score)
+        .filter_by(session_id=session_id)
+        .order_by(Score.computed_at.desc())
+        .first()
+    )
+    if not latest:
+        raise HTTPException(404, "No score found for this session")
+
+    return ScoreResponse(
+        score=latest.confidence_score,
+        risk_level=latest.risk_level,
+        action=latest.action,
+        top_anomalies=json.loads(latest.top_anomalies or "[]"),
+        snapshot_index=latest.snapshot_index,
+        updated_at=latest.computed_at.isoformat(),
+    )

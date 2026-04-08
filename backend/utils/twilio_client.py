@@ -1,48 +1,57 @@
+"""
+SHIELD Twilio SMS Client
+─────────────────────────
+Sends SMS alerts via Twilio. Gracefully falls back to logging
+when credentials are not configured.
+"""
+
 import os
-from twilio.rest import Client
-from dotenv import load_dotenv
+import logging
 
-load_dotenv()
+logger = logging.getLogger("shield.twilio")
 
-TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_FROM_NUMBER = os.getenv("TWILIO_FROM_NUMBER")
-DEMO_ALERT_NUMBER = os.getenv("DEMO_ALERT_NUMBER")
 
-def send_alert(to_number: str = None, score: int = 27, top_anomalies: list = []):
+def send_sms(to: str, score: int, top_anomalies: list[str]) -> str | None:
     """
-    Send a Twilio SMS alert to the user.
+    Send SMS alert via Twilio. Returns message SID or None if not configured.
+
+    Args:
+        to:             recipient phone number (e.g., "+919876543210")
+        score:          confidence score (0–100)
+        top_anomalies:  list of anomaly strings
+
+    Returns:
+        str — Twilio message SID if sent successfully
+        None — if Twilio not configured or send failed
     """
-    if not to_number:
-        to_number = DEMO_ALERT_NUMBER
-        
-    if not all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER, to_number]):
-        print("Twilio credentials or demo phone number missing. Logging alert instead.")
-        print(f"ALERT: Score {score}, Anomalies: {', '.join(top_anomalies)}")
-        return {"sent": False, "error": "Credentials missing"}
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token  = os.getenv("TWILIO_AUTH_TOKEN")
+    from_number = os.getenv("TWILIO_FROM_NUMBER")
+
+    if not all([account_sid, auth_token, from_number, to]):
+        logger.warning(
+            f"[TWILIO] Not configured — alert logged but not sent. "
+            f"Score: {score}, Anomalies: {top_anomalies[:2]}"
+        )
+        return None
+
+    # Max 2 anomalies in SMS to keep it readable
+    reason_str = " | ".join(top_anomalies[:2])
+
+    body = (
+        f"[ALERT] SHIELD Alert: Suspicious activity detected.\n"
+        f"Risk score: {score}/100.\n"
+        f"Reason: {reason_str}.\n"
+        f"Your transaction has been frozen.\n"
+        f"Call 1800-SHIELD to verify."
+    )
 
     try:
-        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        
-        reason = ", ".join(top_anomalies[:3])
-        message_body = (
-            f"🚨 BehaviorShield Alert: Suspicious activity on your account.\n"
-            f"Risk score: {score}/100. Reason: {reason}.\n"
-            f"Your transaction has been frozen. Call 1800-XXX-XXXX to verify."
-        )
-
-        message = client.messages.create(
-            body=message_body,
-            from_=TWILIO_FROM_NUMBER,
-            to=to_number
-        )
-        
-        print(f"SMS Sent! SID: {message.sid}")
-        return {"sent": True, "message_sid": message.sid}
+        from twilio.rest import Client
+        client = Client(account_sid, auth_token)
+        message = client.messages.create(body=body, from_=from_number, to=to)
+        logger.info(f"[TWILIO] SMS sent to {to}: SID={message.sid}")
+        return message.sid
     except Exception as e:
-        print(f"Failed to send SMS: {e}")
-        return {"sent": False, "error": str(e)}
-
-if __name__ == "__main__":
-    # Test send
-    send_alert(score=27, top_anomalies=["Typing delay +80%", "New device", "SIM swap detected"])
+        logger.error(f"[TWILIO] Failed to send SMS: {e}")
+        return None

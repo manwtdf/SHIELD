@@ -75,9 +75,6 @@ FEATURE_NAMES: list[str] = [
 
 assert len(FEATURE_NAMES) == 55, f"Expected 55 features, got {len(FEATURE_NAMES)}"
 
-# Canonical dimension
-FEATURE_DIM = len(FEATURE_NAMES)
-
 # Fast index lookup
 FEATURE_INDEX: dict[str, int] = {name: i for i, name in enumerate(FEATURE_NAMES)}
 
@@ -95,7 +92,7 @@ FEATURE_GROUPS: dict[str, list[str]] = {
 
 # Features that are categorical (0/1 or small integers) — treated differently
 # in anomaly explainer (no percentage change, just flag/not flag)
-CATEGORICAL_FEATURES: set[str] = {
+CATEGORICAL_FEATURES = {
     "is_new_device",
     "timezone_changed",
     "os_version_changed",
@@ -105,7 +102,6 @@ CATEGORICAL_FEATURES: set[str] = {
     "is_known_fingerprint",
 }
 
-
 def dict_to_vector(feature_dict: dict[str, float]) -> list[float]:
     """
     Convert a partial or complete feature dict to a 55-length list.
@@ -114,8 +110,6 @@ def dict_to_vector(feature_dict: dict[str, float]) -> list[float]:
     """
     return [float(feature_dict.get(name, 0.0)) for name in FEATURE_NAMES]
 
-
 def vector_to_dict(vector: list[float]) -> dict[str, float]:
-    """Convert a 55-length vector back to a feature dict."""
-    assert len(vector) == FEATURE_DIM, f"Expected {FEATURE_DIM}, got {len(vector)}"
+    assert len(vector) == 55, f"Expected 55, got {len(vector)}"
     return {name: vector[i] for i, name in enumerate(FEATURE_NAMES)}

@@ -12,12 +12,13 @@ const iconStyles: Record<string, string> = {
 };
 
 interface AlertFeedProps {
+  sessionId?: string;
   topAnomalies?: string[];
   action?: string;
   riskLevel?: string;
 }
 
-const AlertFeed = ({ topAnomalies = [], action, riskLevel }: AlertFeedProps) => {
+const AlertFeed = ({ sessionId, topAnomalies = [], action, riskLevel }: AlertFeedProps) => {
   const alerts = topAnomalies.map((text, i) => {
     let severity = "warning";
     let icon = AlertTriangle;
@@ -31,8 +32,13 @@ const AlertFeed = ({ topAnomalies = [], action, riskLevel }: AlertFeedProps) => 
   const hasCritical = alerts.some((a) => a.severity === "critical");
 
   const handleSendAlert = async () => {
+    if (!sessionId) return;
     try {
-      await fetch("http://localhost:8000/alert/send", { method: "POST" });
+      await fetch("http://localhost:8000/alert/send", { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, alert_type: "SMS" })
+      });
       console.log("SMS alert sent");
     } catch {
       console.log("Failed to send alert (API unavailable)");
