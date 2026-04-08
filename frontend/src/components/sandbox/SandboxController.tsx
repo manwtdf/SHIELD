@@ -13,13 +13,14 @@ interface SandboxControllerProps {
   anomalies: string[];
 }
 
-export const SandboxController: React.FC<SandboxControllerProps> = ({
+export const SandboxController: React.FC<SandboxControllerProps & { captureAndFeedData?: () => Promise<void> }> = ({
   userId,
   mode,
   setMode,
   currentScore,
   riskLevel,
-  anomalies
+  anomalies,
+  captureAndFeedData
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [trainingStatus, setTrainingStatus] = useState<string>('');
@@ -105,7 +106,7 @@ export const SandboxController: React.FC<SandboxControllerProps> = ({
             <span className="text-brand-gold font-bold">#{userId}</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <button 
               onClick={handleTrain}
               className="bg-blue-900/50 hover:bg-blue-800 border border-blue-700 text-blue-300 py-2 rounded-lg flex items-center justify-center space-x-1 transition-colors"
@@ -121,6 +122,15 @@ export const SandboxController: React.FC<SandboxControllerProps> = ({
               <span className="text-[10px] uppercase font-bold">Drop Data</span>
             </button>
           </div>
+          {captureAndFeedData && (
+            <button 
+              onClick={captureAndFeedData}
+              className="w-full bg-brand-gold/20 hover:bg-brand-gold/40 border border-brand-gold text-brand-gold py-2 rounded-lg flex items-center justify-center space-x-1 transition-colors"
+            >
+              <Activity className="w-3 h-3" />
+              <span className="text-[10px] uppercase font-bold">Capture & Feed Training Data</span>
+            </button>
+          )}
           {trainingStatus && (
             <div className="text-[10px] text-slate-400 bg-slate-900 p-2 rounded border border-slate-800">
               {trainingStatus}

@@ -39,7 +39,7 @@ export const BankingAppPage = () => {
   const sessionType = sandboxMode === 'TESTING' ? 'attacker' : 'legitimate';
 
   // Initialize behavioral tracking SDK
-  const { currentScore, riskLevel, action, anomalies } = useBehaviorSDK(targetUserId, sessionId);
+  const { currentScore, riskLevel, anomalies, captureAndFeedData } = useBehaviorSDK(targetUserId, sessionId);
 
   // Poll for freeze status
   useEffect(() => {
@@ -103,6 +103,7 @@ export const BankingAppPage = () => {
         currentScore={currentScore}
         riskLevel={riskLevel}
         anomalies={anomalies}
+        captureAndFeedData={sandboxMode === 'OFF' ? undefined : captureAndFeedData}
       />
       
       <PhoneFrame>
