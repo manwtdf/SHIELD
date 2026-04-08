@@ -252,16 +252,21 @@ Login → Dashboard → Transfer → OTP → [ALLOWED | FREEZE MODAL]
 
 ### useBehaviorSDK.ts -- what it captures
 ```typescript
-// Real browser events -- fires during legitimate session (judge interaction)
-window.addEventListener('keydown', onKeyDown)       // inter-key delay, dwell start
-window.addEventListener('keyup', onKeyUp)           // dwell end
-window.addEventListener('mousemove', onMouseMove)   // movement entropy (desktop sim)
-window.addEventListener('click', onClick)           // click speed
-window.addEventListener('touchstart', onTouch)      // touch dynamics
+// Authentic Telemetry SDK -- fires during legitimate or attacker test sessions
+window.addEventListener('keydown', onKeyDown)       // inter-key delay, dwell start, burst count
+window.addEventListener('touchstart', onTouch)      // touch velocity, pressure, swipe distances
+window.addEventListener('mousemove', onMouseMove)   // mouse entropy layout binning, cursor speed CV
+window.addEventListener('click', onClick)           // click speed tracking
 
-// Every 6 seconds: extract partial feature vector → POST /session/feature → update score
-// For attacker sessions: pre-seeded snapshots play back automatically
+// Every 6 seconds: extracts moving standard deviations, sliding window variances, and entropy math
+// → POST /session/feature → S.H.I.E.L.D aggregates the authentic 55 array.
 ```
+
+### The S.H.I.E.L.D Sandbox Mode
+Instead of only relying on pre-seeded database arrays, S.H.I.E.L.D now features an interactive **Sandbox Controller**. This allows anyone to physically test the ML on real behavior live!
+1. **TRAINING:** Hand device to User A. They operate Bank App 10 times. `POST /enroll/{user_id}` builds authentic One-Class SVM on *their* true physical behavior.
+2. **TESTING:** Hand device back to User B. They try to do a transfer. The live ML processes their foreign layout entropy and touch dynamics, instantly blocking the transaction visibly.
+3. **DROP:** Hit Reset in the Sandbox terminal to flush the user and try a new person.
 
 ---
 
@@ -556,7 +561,7 @@ Score:    22 | Action: ALL ACCOUNTS FROZEN
 
 ---
 
-## THE 47 FEATURES
+## THE 55 FEATURES
 
 ### Touch Dynamics (8)
 `tap_pressure_mean`, `tap_pressure_std`, `swipe_velocity_mean`, `swipe_velocity_std`,
@@ -584,7 +589,13 @@ Score:    22 | Action: ALL ACCOUNTS FROZEN
 ### Device Context (4)
 `is_new_device`, `device_fingerprint_delta`, `timezone_changed`, `os_version_changed`
 
-**Total: 47. Assert this in feature_schema.py.**
+### Device Trust Context (5)
+`device_class_known`, `device_session_count`, `device_class_switch`, `is_known_fingerprint`, `time_since_last_seen_hours`
+
+### Desktop Mouse Biometrics (3)
+`mouse_movement_entropy`, `mouse_speed_cv`, `scroll_wheel_event_count`
+
+**Total: 55.** This matches identical alignment in `feature_schema.py`.
 
 ---
 

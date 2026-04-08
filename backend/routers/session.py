@@ -13,6 +13,8 @@ router = APIRouter(prefix="/session", tags=["Session Management"])
 class SessionStart(BaseModel):
     user_id: int
     session_type: str # 'legitimate' | 'attacker' | 'scenario_N'
+    device_class: str = "mobile"
+    device_fingerprint: str = "default_fingerprint"
 
 class FeatureSnapshot(BaseModel):
     session_id: str
@@ -33,10 +35,16 @@ def start_session(data: SessionStart):
             id=session_id,
             user_id=data.user_id,
             session_type=data.session_type,
-            feature_vector_json=[0.0] * 47 # Initially empty vector
+            device_class=data.device_class,
+            feature_vector_json=[0.0] * len(FEATURE_NAMES)
         )
         db.add(new_session)
         db.commit()
+        
+        # Register device via backend.ml.fleet_anomaly
+        from backend.ml.fleet_anomaly import check_fleet_anomaly, register_device
+        register_device(db, data.device_fingerprint, data.user_id, data.device_class)
+        
         return {"session_id": session_id}
     finally:
         db.close()
@@ -50,7 +58,7 @@ def submit_feature(data: FeatureSnapshot):
             raise HTTPException(status_code=404, detail="Session not found")
         
         # Merge snapshot into session vector
-        current_vector = session.feature_vector_json or ([0.0] * 47)
+        current_vector = session.feature_vector_json or ([0.0] * len(FEATURE_NAMES))
         for k, v in data.feature_snapshot.items():
             if k in FEATURE_NAMES:
                  current_vector[FEATURE_NAMES.index(k)] = v
@@ -65,14 +73,34 @@ def submit_feature(data: FeatureSnapshot):
         ).first()
         sim_swap_active = sim_swap is not None
 
+        # Gather Device Context from DeviceRegistry
+        from backend.db.models import DeviceRegistry
+        # We need the device fingerprint! Wait, session doesn't store fingerprint natively.
+        # But we can query the most recently seen fingerprint for this user.
+        # Ideally, we should pass fingerprint in FeatureSnapshot or store in Session.
+        # Let's get the most recent or matching class device.
+        device = db.query(DeviceRegistry).filter(
+            DeviceRegistry.user_id == session.user_id,
+            DeviceRegistry.device_class == session.device_class
+        ).order_by(DeviceRegistry.last_seen.desc()).first()
+        
+        device_context = {
+            "device_class_known": 1 if device else 0,
+            "device_session_count": device.session_count if device else 0,
+            "device_class_switch": 0, # Calculate if current is different from dominant
+            "is_known_fingerprint": 1 if device and device.trust_level == 'known' else 0,
+        }
+
         # Predict behavioral score
         behavior_score = predict_score(session.user_id, current_vector)
         
-        # Fuse with SIM swap
-        fusion = fuse_score(behavior_score, sim_swap_active)
+        # Fuse with SIM swap and context
+        fusion = fuse_score(behavior_score, sim_swap_active, device_context)
         
         # Get anomalies using centralized logic
-        anomalies = top_anomaly_strings(session.user_id, current_vector, sim_swap_active=sim_swap_active)
+        anomalies = top_anomaly_strings(session.user_id, current_vector, device_class=session.device_class)
+        if sim_swap_active:
+            anomalies.insert(0, "SIM swap detected recently on account")
         
         # Save score
         new_score = Score(

@@ -3,6 +3,7 @@ import { Shield, Lock, CreditCard, CheckCircle, AlertTriangle, Home, Clock, User
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useBehaviorSDK } from '../hooks/useBehaviorSDK';
+import { SandboxController } from '../components/sandbox/SandboxController';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -31,10 +32,14 @@ export const BankingAppPage = () => {
   const [amount, setAmount] = useState('15000');
   const [isFrozen, setIsFrozen] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const userId = 1;
+  
+  // Sandbox State
+  const [sandboxMode, setSandboxMode] = useState<'OFF' | 'TRAINING' | 'TESTING'>('OFF');
+  const targetUserId = sandboxMode === 'OFF' ? 1 : 999;
+  const sessionType = sandboxMode === 'TESTING' ? 'attacker' : 'legitimate';
 
   // Initialize behavioral tracking SDK
-  useBehaviorSDK(userId, sessionId);
+  const { currentScore, riskLevel, action, anomalies } = useBehaviorSDK(targetUserId, sessionId);
 
   // Poll for freeze status
   useEffect(() => {
@@ -59,8 +64,8 @@ export const BankingAppPage = () => {
     if (!sessionId) {
       try {
         const res = await axios.post(`${BACKEND_URL}/session/start`, {
-          user_id: userId,
-          session_type: 'legitimate'
+          user_id: targetUserId,
+          session_type: sessionType
         });
         setSessionId(res.data.session_id);
       } catch (err) {
@@ -90,6 +95,16 @@ export const BankingAppPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 pb-28">
+      {/* Sandbox Controller Overlay */}
+      <SandboxController 
+        userId={999}
+        mode={sandboxMode}
+        setMode={setSandboxMode}
+        currentScore={currentScore}
+        riskLevel={riskLevel}
+        anomalies={anomalies}
+      />
+      
       <PhoneFrame>
         <div className="relative h-full flex flex-col overflow-hidden no-scrollbar" style={{ fontFamily: "'Inter', 'Manrope', sans-serif" }}>
 

@@ -12,7 +12,7 @@ class FleetCheckRequest(BaseModel):
 class FleetCheckResponse(BaseModel):
     fleet_anomaly: bool
     accounts_seen: int
-    affected_users: List[int]
+    flagged_accounts: List[int]
     action: str
 
 @router.post("/check", response_model=FleetCheckResponse)
@@ -22,6 +22,11 @@ def fleet_check(data: FleetCheckRequest):
     Identifies if a single device is attempting to access 2+ accounts within 60 mins.
     Action: FREEZE_ALL_ACCOUNTS if detected.
     """
-    register_device(data.user_id, data.device_fingerprint)
-    res = check_fleet_anomaly(data.device_fingerprint, data.user_id)
-    return res
+    from backend.db.models import SessionLocal
+    db = SessionLocal()
+    try:
+        register_device(db, data.device_fingerprint, data.user_id)
+        res = check_fleet_anomaly(data.device_fingerprint, data.user_id)
+        return res
+    finally:
+        db.close()

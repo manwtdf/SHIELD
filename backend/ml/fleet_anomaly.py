@@ -24,7 +24,7 @@ def check_fleet_anomaly(device_fingerprint: str, user_id: int) -> dict:
         distinct_accounts = [r[0] for r in rows]
 
         # 2. Register current check
-        _register_device(db, device_fingerprint, user_id)
+        register_device(db, device_fingerprint, user_id)
 
         # If current user isn't in registry yet, add to memory for the len check
         if user_id not in distinct_accounts:
@@ -44,9 +44,9 @@ def check_fleet_anomaly(device_fingerprint: str, user_id: int) -> dict:
         db.close()
 
 
-def _register_device(db, device_fingerprint: str, user_id: int):
+def register_device(db, device_fingerprint: str, user_id: int, device_class: str = "mobile"):
     """
-    Internal: Upsert device registration.
+    Internal: Upsert device registration. Elevates trust level if seen enough times.
     """
     device = db.query(DeviceRegistry).filter(
         DeviceRegistry.user_id == user_id,
@@ -55,10 +55,16 @@ def _register_device(db, device_fingerprint: str, user_id: int):
 
     if device:
         device.last_seen = datetime.utcnow()
+        device.session_count += 1
+        if device.session_count >= 3:
+            device.trust_level = "known"
     else:
         device = DeviceRegistry(
             user_id=user_id,
             device_fingerprint=device_fingerprint,
+            device_class=device_class,
+            trust_level="new",
+            session_count=1,
             first_seen=datetime.utcnow(),
             last_seen=datetime.utcnow()
         )

@@ -17,7 +17,7 @@ def inspect_features(session_id: str):
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         
-        vector = session.feature_vector_json or ([0.0] * 47)
+        vector = session.feature_vector_json or ([0.0] * len(FEATURE_NAMES))
         
         # Load user baseline for statistical comparison
         # (10 sessions required)
@@ -47,7 +47,7 @@ def inspect_features(session_id: str):
                 "value": round(float(val), 3),
                 "baseline": round(float(base), 3),
                 "z_score": round(float(z), 2),
-                "flagged": abs(z) > 2.5
+                "flagged": bool(abs(z) > 2.5)
             })
             
         return {"features": results}

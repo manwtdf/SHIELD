@@ -93,7 +93,8 @@
 - **Phone frame:** CSS device frame around the 375px app. Judges instantly read "this is a phone"
 - **S.H.I.E.L.D badge:** Small pulsing green dot + "Protected" in top-right corner of every screen. Turns red when anomaly detected
 - **No visible scoring here** -- this app is intentionally unaware-looking. The magic happens on the dashboard, not here
-- **Behavioral SDK runs silently** -- captures 47 high-fidelity features (touch, typing, motion, navigation, temporal) every 6 seconds.
+- **Authentic Behavioral SDK** -- replaces randomized simulation with a true statistical engine capturing exactly 55 dimensions simultaneously. Attaches listeners natively to `touchstart` velocity, `mousemove` layout entropy, `keydown` temporal delays, and active `touch` variances calculated in 6-second buffers.
+- **Interactive Training Sandbox** -- Injected `<SandboxController />` overlay allowing live enrollment of new behaviors without database friction. Let a human execute 10 natural sessions, map the ML model via `POST /enroll/reset`, and hand the device to an attacker to watch live ML processing.
 - **Freeze modal:** Full-screen red overlay, not a small popup. Dramatic. Lock icon. "Your transaction has been frozen by S.H.I.E.L.D."
 
 ---
